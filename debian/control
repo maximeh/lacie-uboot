@@ -1,0 +1,16 @@
+Source: plum
+Section: net
+Priority: extra
+Maintainer: Maxime Hadjinlian <maxime.hadjinlian@gmail.com>
+Build-Depends: cdbs, debhelper (>= 7), python (>= 2.5), python-support
+Depends: ${misc:Depends}
+Standards-Version: 3.8.2
+Homepage: http://f00.fr/
+
+Package: plum
+Architecture: all
+Depends: ${python:Depends}, ${misc:Depends}, python-ptftplib
+Conflicts: 
+Description: plum let you connect to the U-Boot netconsole of any 
+ newgen LaCie product. 
+ plum include a mini UDP server.

@@ -1,0 +1,46 @@
+.TH PLUM 1 "2010 Sep 24"
+.SH NAME
+plum \- A simple U-Boot netconsole client.
+.SH SYNOPSIS
+.br
+.B plum
+[options]
+.SH DESCRIPTION
+.B plum
+is a simple U-Boot netconsole client. It will allow you to connect to your
+product before the kernel initialization.
+To use U-Boot netconsole, type help in the interactive console.
+.PP
+.B plum
+is an interactive shell that let you put command and see answer from U-Boot.
+By default, it uses the port 6666, 4445 and 4446.
+.PP
+.SH OPTIONS
+The options may be given in any order.
+.br
+.TP 15
+\-h, \-\-help
+Display
+.B plum
+help, options and usage.
+.TP
+.RB \-i " IP", " " \-\-ip= "IP"
+Give
+.B plum
+the IP address of the target. It must be in the W.X.Y.Z format where
+each number is > 0 and < 255.
+.TP
+.RB \-m " MAC", " " \-\-mac= "MAC"
+Give
+.B plum
+the MAC address of the target. It must be in the 00:00:00:00:00:00 format where
+each hexadecimal number is > 0 and < F.
+.TP
+\-D, \-\-debug
+Output debugging information.
+.SH SEE ALSO
+nc(1)
+.SH AUTHORS
+.B plum
+is written and maintained by Maxime Hadjinlian <maxime.hadjinlian@gmail.com>,
+with help from a few others. See the AUTHORS file for more information.
