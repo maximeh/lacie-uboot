@@ -18,7 +18,7 @@ distribution installation, you may need to specify the Python module
 search path with PYTHONPATH before executing the binaries:
 
   $ export PYTHONPATH=./python-path
-  $ bin/plum.py
+  $ bin/plum
   Please /!\HARD/!\ reboot the device /!\NOW/!\
 
   Marvell>>
@@ -28,18 +28,18 @@ U-Boot netconsole client
 
 For help on how to use plum, type:
 
-  $ ./bin/plum.py --help
+  $ ./bin/plum --help
 
 The IP can must be given using -i option. The MAC of the target is 
 also mandatory and is given using the -m option.
 For example, to target 192.168.0.6 with 00:D0:4B:00:00:00 :
 
-  $ ./bin/plum.py -i 192.168.0.6 -m 00:D0:4B:00:00:00
+  $ ./bin/plum -i 192.168.0.6 -m 00:D0:4B:00:00:00
 
 The plum client is an interactive client, just launch it and type 'help'
 to see the available commands:
 
-  $ ./bin/plum.py
+  $ ./bin/plum
   Marvell>> help
   ...
 
