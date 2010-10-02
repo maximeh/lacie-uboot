@@ -35,6 +35,9 @@ plum allow you to discuss with the netconsol of u-boot.
 import logging
 from multiprocessing import Process, Value
 import os
+import readline 
+# for history and elaborate line editing when using raw_input
+# see http://docs.python.org/library/functions.html#raw_input
 import socket
 import struct
 import sys
