@@ -45,6 +45,7 @@ sys.dont_write_bytecode = True
 
 import plum_net
 import plum_lump
+import plum_script
 
 class Plum(object):
     '''
@@ -61,6 +62,7 @@ class Plum(object):
         self.response_port = 4445
         self.uboot_port = 6666
         self.lump_timeout = 120
+        self.is_script = False
         self.debug = False
 
     def launch_cmd(self, cmd):
@@ -170,29 +172,36 @@ def main():
                       help="Address IP of the targeted device (Mandatory)\n" \
                       " (W.X.Y.Z where 0 > W, X, Y, Z < 255)"
                       )
+    parser.add_option("-p", "--progress", dest="progress", action="store_const",
+                      const=True, help="Print a progess bar," \
+                      " use with a script shebang only.")
     parser.add_option("-D", "--debug", dest="loglevel", action="store_const",
                       const=logging.DEBUG, help="Output debugging information")
 
     plum_session = Plum()
      
-    options, _ = parser.parse_args()
-    if (options.mac is None or \
-            options.ip_address is None ) :
-        logging.info("You should at least set theses options : ")
-        logging.info(" - MAC adress (00:00:00:00:00)")
-        logging.info(" - IP address (W.X.Y.Z)")
-        parser.print_help()
-        return 1
-
     if '-D' in sys.argv or \
        '--debug' in sys.argv:
         plum_session.debug = True
         logging.basicConfig(level=logging.DEBUG, format='%(message)s')
     else:
         logging.basicConfig(level=logging.INFO, format='%(message)s')
-
-    plum_session.iff_mac_dest = options.mac
-    plum_session.iff_new_ip = options.ip_address
+    
+    options, _ = parser.parse_args()
+    if (options.mac is None or \
+        options.ip_address is None ) and \
+        ( len(sys.argv) == 1):
+        logging.info("You should at least set theses options : ")
+        logging.info(" - MAC adress (00:00:00:00:00)")
+        logging.info(" - IP address (W.X.Y.Z)")
+        parser.print_help()
+        return 1
+    elif os.path.isfile(sys.argv[len(sys.argv)-1]):
+        plum_session.is_script = True
+        plum_script.set_setup(plum_session, sys.argv[len(sys.argv)-1])
+    else:
+        plum_session.iff_mac_dest = options.mac
+        plum_session.iff_new_ip = options.ip_address
 
     if not plum_net.is_valid_mac(plum_session.iff_mac_dest):
         logging.error("Your MAC address is not in the proper format. \
@@ -206,9 +215,12 @@ def main():
     if not plum_lump.send_lump(plum_session):
         logging.debug("LUMP was not sent/receveid by the target")
 
-    exit_code = 42
-    while(exit_code):
-        exit_code = plum_session.launch_cmd(raw_input("Marvell>> "))
+    if plum_session.is_script:
+        plum_script.execute(plum_session, sys.argv[len(sys.argv)-1], options.progress)
+    else:
+        exit_code = 42
+        while(exit_code):
+            exit_code = plum_session.launch_cmd(raw_input("Marvell>> "))
 
     return 0
 
@@ -222,4 +234,7 @@ if __name__ == '__main__' :
         sys.exit(main())
     except KeyboardInterrupt:
         sys.exit(0)
-
+    except TypeError:
+        sys.stderr.write('What are you doing ? Read the manual please.\n')
+        sys.stderr.flush()
+        sys.exit(0)
