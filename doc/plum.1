@@ -1,4 +1,4 @@
-.TH PLUM 1 "2010 Sep 24"
+.TH PLUM 1 "2010 Oct 05"
 .SH NAME
 plum \- A simple U-Boot netconsole client.
 .SH SYNOPSIS
@@ -35,6 +35,11 @@ Give
 .B plum
 the MAC address of the target. It must be in the 00:00:00:00:00:00 format where
 each hexadecimal number is > 0 and < F.
+.TP
+\-p, \-\-progress
+Use this option after the shebang of your plum script.
+This option will output a progress bar to show the progress of 
+your script. Use this when your script does not output anything.
 .TP
 \-D, \-\-debug
 Output debugging information.
