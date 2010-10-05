@@ -20,7 +20,6 @@ search path with PYTHONPATH before executing the binaries:
   $ export PYTHONPATH=./python-path
   $ bin/plum
   Please /!\HARD/!\ reboot the device /!\NOW/!\
-
   Marvell>>
 
 U-Boot netconsole client
@@ -42,4 +41,27 @@ to see the available commands:
   $ ./bin/plum
   Marvell>> help
   ...
+
+You can create a script like this :
+
+======
+#!/usr/bin/plum
+
+setup=(192.168.8.64 00:D0:4B:8B:35:3B)
+
+version
+help
+
+======
+
+Note the shebang and the setup= line, these two
+things are mandatory if you want to make it work.
+
+You must also put an emty line at the end of your script
+otherwise, the last line won't be executed.
+
+The order of the ip and mac in the setup does not matter.
+If your script does not output anything, I recomend you to use the 
+-p option with the shebang to print a pretty progress bar.
+See the manual for this option.
 
