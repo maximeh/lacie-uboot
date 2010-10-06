@@ -49,7 +49,6 @@ IFF_IPS_TYPE  = 0x49505300
 IFF_MAC_TYPE  = 0x4D414340
 IFF_MACD_TYPE = 0x4D414344
 IFF_MACS_TYPE = 0x4D414353
-IFF_MAC_ANY = "00:00:00:00:00:00"
 
 def launch_server(plum_session, prompt):
     '''
@@ -113,24 +112,47 @@ def send_lump(session):
     server = launch_server(session, prompt) 
 
     lump_ok = True
-    # Pack a MAC address (00:00:00:00:00:00) into a 6 byte string.
+    
+    # Create an array with 6 cases, each one is a member (int) of the MAC 
     fields_macdest = [int(x, 16) for x in session.iff_mac_dest.split(':')]
-    fields_macany = [int(x, 16) for x in IFF_MAC_ANY.split(':')]
 
-    # Pack an IP address (192.168.8.115) into a 4 byte string.
+    # Create an array with 4 cases, each one is a member (int) of the IP 
     fields_ip = [int(x) for x in session.iff_new_ip.split('.')]
 
-    fmt = '!6I1s1s6B4I4B4I1s1s6B'
-    # We pack the LUMP packet as it should be.
-    pkt = struct.pack(fmt, 
-    IFF_LUMP_TYPE, 0x44, IFF_MACD_TYPE, 0x10, IFF_MAC_TYPE, 0x8,
-    '\x00', '\x00', fields_macdest[0], fields_macdest[1], fields_macdest[2],
-    fields_macdest[3], fields_macdest[4], fields_macdest[5],
-    IFF_IPS_TYPE, 0x0C, IFF_IP_TYPE, 0x4, 
-    fields_ip[0], fields_ip[1], fields_ip[2], fields_ip[3],
-    IFF_MACS_TYPE, 0x10, IFF_MAC_TYPE, 0x08, '\x00','\x00',
-    fields_macany[0], fields_macany[1], fields_macany[2], fields_macany[3],
-    fields_macany[4], fields_macany[5])
+    pkt = struct.pack('!I' # LUMP
+                      'L'  # Length of LUMP
+                      'I'  # MACD
+                      'L'  # Length of MACD
+                      'I'  # MAC@
+                      'L'  # Length of MAC@ field
+                      '2x' # fill space because MAC take only 6 bytes
+                      '6s' # MAC address of target
+                      'I'  # IPS
+                      'L'  # Length of IPS
+                      'I'  # IP@
+                      'L'  # Length of IP@
+                      '4s' # IP of the target
+                      'I'  # MACS
+                      'L'  # Length of MACS
+                      'I'  # MAC address of source
+                      'L'  # Length of MAC@
+                      '8x',  # Empty MAC (should be 6x but according to wireshark, we need the extra)
+                      IFF_LUMP_TYPE,
+                      0x44,
+                      IFF_MACD_TYPE,
+                      0x10,
+                      IFF_MAC_TYPE,
+                      0x8,
+                      struct.pack('!6B', *fields_macdest), # int[] -> byte[]
+                      IFF_IPS_TYPE,
+                      0x0C,
+                      IFF_IP_TYPE,
+                      0x4,
+                      struct.pack('!4B', *fields_ip), # int[] -> byte[]
+                      IFF_MACS_TYPE,
+                      0x10,
+                      IFF_MAC_TYPE,
+                      0x8)
 
     logging.debug("Sending some LUMP / Ctrl-C, waiting for the NAS to start up")
     logging.info("Please /!\HARD/!\ reboot the device /!\NOW/!\ ")
