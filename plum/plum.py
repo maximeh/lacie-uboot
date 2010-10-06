@@ -232,7 +232,7 @@ if __name__ == '__main__' :
 
     try:
         sys.exit(main())
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         sys.exit(0)
     except TypeError:
         sys.stderr.write('What are you doing ? Read the manual please.\n')
