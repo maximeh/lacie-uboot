@@ -23,7 +23,7 @@ search path with PYTHONPATH before executing the binaries:
   Marvell>>
 
 U-Boot netconsole client
-^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------
 
 For help on how to use plum, type:
 
@@ -44,15 +44,12 @@ to see the available commands:
 
 You can create a script like this :
 
-======
-#!/usr/bin/plum
+    #!/usr/bin/plum
 
-setup=(192.168.8.64 00:D0:4B:8B:35:3B)
+    setup=(192.168.8.64 00:D0:4B:8B:35:3B)
 
-version
-help
-
-======
+    version
+    help
 
 Note the shebang and the setup= line, these two
 things are mandatory if you want to make it work.
