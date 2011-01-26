@@ -56,7 +56,7 @@ setup(
     maintainer_email = 'maxime.hadjinlian@gmail.com',
 
     description = 'Python LaCie das U-Boot Milchkuh',
-    long_description=read('README'),
+    long_description=read('README.md'),
     url = 'http://f00.fr',
 
     license = 'GPL',
