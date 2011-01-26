@@ -52,10 +52,10 @@ class Plum(object):
     This class represent and contains all objects
     needed by plum to perform its magic.
      '''
-     
+
     def __init__(self):
         '''Sets some parameters'''
-        
+
         self.iff_new_ip = ""
         self.iff_mac_dest = ""
         self.request_port = 4446
@@ -69,10 +69,10 @@ class Plum(object):
         '''
         send a cmd in a separate process
         '''
-        
+
         exit_list = ['exit', 'reset']
         prompt = Value('i', 1)
-        
+
         socket.setdefaulttimeout(60)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -93,7 +93,7 @@ class Plum(object):
 
         sock.close()
         return 42
-        
+
     def send_cmd( self, comd, prompt_check ):
         ''' send a command to a socket '''
 
@@ -131,11 +131,6 @@ class Plum(object):
                     if 'Override Env parameters? (y/n)' == send_data :
                         print send_data
                     send_data = ""
-                    if "Unknown" and "command" in send_ans.split(' '):
-                        logging.error("Unknown command sent to U-Boot : %s",
-                                      cmd_mem)
-                        prompt_check.value = 0
-                        sys.exit(1)
                     prompt_check.value = 0
                 elif from_source:
                     if count_cmd < len(comd):
@@ -157,7 +152,7 @@ class Plum(object):
 
 def main():
     ''' launch everything '''
-   
+
     import optparse
 
     usage = "Usage: %prog [options]"
@@ -179,14 +174,14 @@ def main():
                       const=logging.DEBUG, help="Output debugging information")
 
     plum_session = Plum()
-     
+
     if '-D' in sys.argv or \
        '--debug' in sys.argv:
         plum_session.debug = True
         logging.basicConfig(level=logging.DEBUG, format='%(message)s')
     else:
         logging.basicConfig(level=logging.INFO, format='%(message)s')
-    
+
     options, _ = parser.parse_args()
     if (options.mac is None or \
         options.ip_address is None ) and \
@@ -211,7 +206,7 @@ def main():
         logging.error("Your IP is not in the proper format. \
                       \'W.X.Y.Z\' format is awaited.")
         return 1
-        
+
     if not plum_lump.send_lump(plum_session):
         logging.debug("LUMP was not sent/receveid by the target")
 
