@@ -55,7 +55,7 @@ def launch_server(plum_session, prompt):
     launch the server method in a separate process
     return the process created or None.
     '''
-    
+ 
     try:
         serv = Process(target=udp_server, \
                        args=( plum_session.iff_new_ip, \
@@ -66,7 +66,7 @@ def launch_server(plum_session, prompt):
         logging.error("Sending LUMP for 60s, no Marvel prompt !")
         serv.terminate()
         return None
-        
+
 def udp_server(iff_new_ip, uboot_port, prompt_check):
     ''' connect to the netconsole until answer is given back '''
 
@@ -112,7 +112,7 @@ def send_lump(session):
     server = launch_server(session, prompt) 
 
     lump_ok = True
-    
+
     # Create an array with 6 cases, each one is a member (int) of the MAC 
     fields_macdest = [int(x, 16) for x in session.iff_mac_dest.split(':')]
 
@@ -161,7 +161,7 @@ def send_lump(session):
     socket.setdefaulttimeout(60)
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    
+
     while prompt.value and timeout < session.lump_timeout:
         sock.sendto(pkt, ('255.255.255.255', session.request_port))
         time.sleep(0.2) #Wait for the device to process the LUMP
@@ -179,4 +179,4 @@ def send_lump(session):
 
     server.terminate()
     return lump_ok
-    
+

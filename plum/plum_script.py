@@ -74,7 +74,7 @@ def set_setup(session, file_path):
         if not ( i == '\n' or i.startswith('#') ):
             script.append(i.strip().lower())
     script_file.close()
-    
+ 
     #search the setup
     for line in script:
         if "setup=" in line:
@@ -93,7 +93,7 @@ def execute(session, file_path, progress):
     Read a script file and 
     parse it to launch every command.
     '''
-    
+
     script_file = open(file_path , 'r+')
 
     script = []
