@@ -17,30 +17,32 @@ Note: if you use the plum tool suite outside of a standard
 distribution installation, you may need to specify the Python module
 search path with PYTHONPATH before executing the binaries:
 
-  $ export PYTHONPATH=./python-path
-  $ bin/plum
-  Please /!\HARD/!\ reboot the device /!\NOW/!\
-  Marvell>>
+    $ export PYTHONPATH=./python-path
+    $ bin/plum
+    Please /!\HARD/!\ reboot the device /!\NOW/!\
+    Marvell>>
+
 
 U-Boot netconsole client
 ------------------------
 
 For help on how to use plum, type:
 
-  $ ./bin/plum --help
+    $ ./bin/plum --help
 
 The IP can must be given using -i option. The MAC of the target is 
 also mandatory and is given using the -m option.
+
 For example, to target 192.168.0.6 with 00:D0:4B:00:00:00 :
 
-  $ ./bin/plum -i 192.168.0.6 -m 00:D0:4B:00:00:00
+    $ ./bin/plum -i 192.168.0.6 -m 00:D0:4B:00:00:00
 
 The plum client is an interactive client, just launch it and type 'help'
 to see the available commands:
 
-  $ ./bin/plum
-  Marvell>> help
-  ...
+    $ ./bin/plum
+    Marvell>> help
+    ...
 
 You can create a script like this :
 
@@ -58,7 +60,9 @@ You must also put an emty line at the end of your script
 otherwise, the last line won't be executed.
 
 The order of the ip and mac in the setup does not matter.
+
 If your script does not output anything, I recomend you to use the 
 -p option with the shebang to print a pretty progress bar.
+
 See the manual for this option.
 
