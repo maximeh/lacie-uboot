@@ -55,7 +55,7 @@ def launch_server(plum_session, prompt):
     launch the server method in a separate process
     return the process created or None.
     '''
- 
+
     try:
         serv = Process(target=udp_server, \
                        args=( plum_session.iff_new_ip, \
@@ -163,10 +163,10 @@ def send_lump(session):
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
     while prompt.value and timeout < session.lump_timeout:
-        sock.sendto(pkt, ('255.255.255.255', session.request_port))
+        sock.sendto(pkt, (session.broadcast_address, session.request_port))
         time.sleep(0.2) #Wait for the device to process the LUMP
         #Send Ctrl-C (Code ASCII 3 for EXT equivalent of SIGINT for Unix)
-        sock.sendto('\3', ('255.255.255.255', session.uboot_port))
+        sock.sendto('\3', (session.broadcast_address, session.uboot_port))
 
         time.sleep(1)
         timeout += 1

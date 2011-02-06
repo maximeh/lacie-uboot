@@ -57,6 +57,7 @@ class Plum(object):
         '''Sets some parameters'''
 
         self.iff_new_ip = ""
+        self.broadcast_address = ""
         self.iff_mac_dest = ""
         self.request_port = 4446
         self.response_port = 4445
@@ -167,6 +168,11 @@ def main():
                       help="Address IP of the targeted device (Mandatory)\n" \
                       " (W.X.Y.Z where 0 > W, X, Y, Z < 255)"
                       )
+    parser.add_option("-b", "--broadcast", dest="brd_address", action="store",
+                      default="255.255.255.255",
+                      help="Broadcast address to send LUMP packet to.\n"
+                      "Default is 255.255.255.255.\n"
+                      )
     parser.add_option("-p", "--progress", dest="progress", action="store_const",
                       const=True, help="Print a progess bar," \
                       " use with a script shebang only.")
@@ -197,12 +203,17 @@ def main():
     else:
         plum_session.iff_mac_dest = options.mac
         plum_session.iff_new_ip = options.ip_address
+        plum_session.broacast_address = options.brd_address
 
     if not plum_net.is_valid_mac(plum_session.iff_mac_dest):
         logging.error("Your MAC address is not in the proper format. \
                        \'00:00:00:00:00:00\' format is awaited.")
         return 1
     if not plum_net.is_valid_ipv4(plum_session.iff_new_ip):
+        logging.error("Your IP is not in the proper format. \
+                      \'W.X.Y.Z\' format is awaited.")
+        return 1
+    if not plum_net.is_valid_ipv4(plum_session.broadcast_address):
         logging.error("Your IP is not in the proper format. \
                       \'W.X.Y.Z\' format is awaited.")
         return 1
