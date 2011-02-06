@@ -13,6 +13,12 @@ Available tools include:
 plum support the --help option to present the usage summary to the
 user.
 
+The best way to use plum is to previously install it using :
+
+    $ python setup.py install
+    # Then you will be able to execute plum from your path.
+    $ plum --help
+
 Note: if you use the plum tool suite outside of a standard
 distribution installation, you may need to specify the Python module
 search path with PYTHONPATH before executing the binaries:
@@ -22,11 +28,6 @@ search path with PYTHONPATH before executing the binaries:
     Please /!\HARD/!\ reboot the device /!\NOW/!\
     Marvell>>
 
-The best way to use plum is to previously install it using :
-
-    $ python setup.py install
-    # Then you will be able to execute plum from your path.
-    $ plum --help
 
 U-Boot netconsole client
 ------------------------
