@@ -35,7 +35,7 @@ plum allow you to discuss with the netconsol of u-boot.
 import logging
 from multiprocessing import Process, Value
 import os
-import readline 
+import readline
 # for history and elaborate line editing when using raw_input
 # see http://docs.python.org/library/functions.html#raw_input
 import socket
@@ -83,7 +83,7 @@ class Plum(object):
             sock.sendto(cmd, (self.iff_new_ip, self.uboot_port))
             return 0
         else:
-            scmd = Process(target=self.send_cmd, 
+            scmd = Process(target=self.send_cmd,
                     args=( cmd, prompt))
             scmd.start()
             scmd.join()
@@ -137,7 +137,7 @@ class Plum(object):
                     if count_cmd < len(comd):
                         count_cmd += 1
                     else:
-                        # to handle the printenv and other case 
+                        # to handle the printenv and other case
                         # when answer is given one letter at a time...
                         write = sys.stdout.write
                         write(str(send_data))
@@ -159,7 +159,7 @@ def main():
     usage = "Usage: %prog [options]"
     parser = optparse.OptionParser(usage=usage)
     parser.add_option("-m", "--mac", dest="mac", action="store",
-                      default=None, 
+                      default=None,
                       help="Address MAC of the targeted device " \
                       "(00:00:00:00:00:00)"
                       )
@@ -203,26 +203,32 @@ def main():
     else:
         plum_session.iff_mac_dest = options.mac
         plum_session.iff_new_ip = options.ip_address
-        plum_session.broacast_address = options.brd_address
+        plum_session.broadcast_address = options.brd_address
 
     if not plum_net.is_valid_mac(plum_session.iff_mac_dest):
-        logging.error("Your MAC address is not in the proper format. \
-                       \'00:00:00:00:00:00\' format is awaited.")
+        logging.error("Your MAC address is not in the proper format." +
+                      "\'00:00:00:00:00:00\' format is awaited. Given %s" \
+                              % plum_session.iff_mac_dest)
         return 1
     if not plum_net.is_valid_ipv4(plum_session.iff_new_ip):
-        logging.error("Your IP is not in the proper format. \
-                      \'W.X.Y.Z\' format is awaited.")
+        logging.error("Your IP is not in the proper format." +
+                      "\'W.X.Y.Z\' format is awaited. Given %s" \
+                      % plum_session.iff_new_ip)
         return 1
     if not plum_net.is_valid_ipv4(plum_session.broadcast_address):
-        logging.error("Your IP is not in the proper format. \
-                      \'W.X.Y.Z\' format is awaited.")
+        print options.brd_address
+        print plum_session.broadcast_address
+        logging.error("Your Broadcast IP is not in the proper format." +
+                      "\'W.X.Y.Z\' format is awaited. Given %s" \
+                      % plum_session.broadcast_address)
         return 1
 
     if not plum_lump.send_lump(plum_session):
         logging.debug("LUMP was not sent/receveid by the target")
 
     if plum_session.is_script:
-        plum_script.execute(plum_session, sys.argv[len(sys.argv)-1], options.progress)
+        plum_script.execute(plum_session, sys.argv[len(sys.argv)-1], 
+                            options.progress)
     else:
         exit_code = 42
         while(exit_code):
