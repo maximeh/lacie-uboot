@@ -47,7 +47,7 @@ setup(
     zip_safe = True,
     install_requires = [''],
     scripts = ['bin/plum'],
-
+    data_files=[('/usr/share/man/man1',['doc/plum.1']),],
 
     author = 'Maxime Hadjinlian',
     author_email = 'maxime.hadjinlian@gmail.com',
