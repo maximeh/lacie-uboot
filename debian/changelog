@@ -1,17 +1,5 @@
-plum (0.1) unstable; urgency=low
+plum (0.1-1) unstable; urgency=low
 
-  [ Maxime Hadjinlian ]
-  * Initial release
+  * source package automatically created by stdeb 0.6.0+git
 
-  * Add the plum script feature, you can now create and use 
-  plum script. You just need to specify a shebang with the 
-  location of plum and the -p option if you want it.
-  You _MUST_ have a line with setup=(ip_or_mac ip_or_mac)
-  Note : the space _IS_ important.
-
-  * Add the -p option to show a progress bar with the script
-
-  * Add a history feature, you may now use the arrow of your 
-  keyboard to cycle through your past command !
-
- -- Maxime Hadjinlian <maxime.hadjinlian@gmail.com>  Tue, 05 Oct 2010 17:03:21 +0200
+ -- Maxime Hadjinlian <maxime.hadjinlian@gmail.com>  Tue, 14 Feb 2012 14:56:50 +0100

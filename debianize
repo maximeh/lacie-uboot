@@ -1,0 +1,21 @@
+#!/bin/bash
+
+if [ "$1" == "clean" ]; then
+    echo -e "cleaning"
+    root=$(dirname $(readlink -f $0))
+    pushd ${root} > /dev/null 2>&1
+    rm -Rf deb_dist plum.egg-info
+    popd > /dev/null 2>&1
+    echo -e "\033[32mdone"
+    exit
+fi
+
+#Need python-stdeb 
+python setup.py --command-packages=stdeb.command sdist_dsc
+
+pushd deb_dist/plum-* > /dev/null 2>&1
+cp ../../debian/control debian/
+dpkg-buildpackage -rfakeroot -uc -us
+popd > /dev/null 2>&1
+plum_path=$(ls deb_dist/python-plum*.deb)
+echo -e "\033[32mDebian package available at $(pwd)/${plum_path}"
