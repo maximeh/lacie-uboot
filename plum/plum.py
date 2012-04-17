@@ -33,19 +33,21 @@ plum allow you to discuss with the netconsol of u-boot.
 
 
 import logging
-from multiprocessing import Process, Value
 import os
 import readline
 # for history and elaborate line editing when using raw_input
 # see http://docs.python.org/library/functions.html#raw_input
+import select
 import socket
 import struct
 import sys
 sys.dont_write_bytecode = True
+import time
 
 import plum_net
 import plum_lump
 import plum_script
+
 
 class Plum(object):
     '''
@@ -66,90 +68,78 @@ class Plum(object):
         self.is_script = False
         self.debug = False
 
-    def launch_cmd(self, cmd):
+    def invoke(self, cmd, display=True):
         '''
         send a cmd in a separate process
         '''
 
-        exit_list = ['exit', 'reset']
-        prompt = Value('i', 1)
+        # Empty command, nothing to do here
+        if cmd == "":
+            return 42
 
+        exit_list = ['exit', 'reset']
         socket.setdefaulttimeout(60)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         if cmd in exit_list:
             cmd = 'reset'
-            cmd = struct.pack('!'+str(len(cmd))+'s1s', cmd, '\x0A')
+            cmd = struct.pack('!' + str(len(cmd)) + 's1s', cmd, '\x0A')
             sock.sendto(cmd, (self.iff_new_ip, self.uboot_port))
+            sock.close()
             return 0
-        else:
-            scmd = Process(target=self.send_cmd,
-                    args=( cmd, prompt))
-            scmd.start()
-            scmd.join()
-            if scmd.exitcode == 1:
-                scmd.terminate()
-                return 0
-            scmd.terminate()
-
-        sock.close()
-        return 42
-
-    def send_cmd( self, comd, prompt_check ):
-        ''' send a command to a socket '''
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.settimeout(10.0)
-        sock_res = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock_res.settimeout(10.0)
 
         try:
-            sock_res.bind(('', self.uboot_port))
+            sock.bind(('', self.uboot_port))
         except socket.error, err:
-            logging.error("Couldn't be a udp server on port %d : %s",
+            logging.error("Can't open %d port. (Error : %s)",
                           self.response_port, err)
-            sock_res.close()
-            sys.exit(1)
+            sock.close()
+            return 0
 
         #we want to send a cmd to the nas and get the reply in ans
         #every command is completed by \n !
-        cmd_mem = comd
-        comd = struct.pack('!'+str(len(comd))+'s1s', comd, '\x0A')
-        sock.sendto(comd, (self.iff_new_ip, self.uboot_port))
-        send_ans = ""
-        count_cmd = 0
-        try:
-            while prompt_check.value == 1:
-                send_data = sock_res.recvfrom(1024)
-                if send_data[1][0] == self.iff_new_ip:
-                    from_source = True
-                send_data = send_data[0]
-                #check when prompt (Marvell>>) is available,
-                # then out to the next while to input command and send them !
-                if ("Marvell>> " == send_data \
-                    or 'Override Env parameters? (y/n)' == send_data) \
-                    and from_source:
-                    if 'Override Env parameters? (y/n)' == send_data :
-                        print send_data
-                    send_data = ""
-                    prompt_check.value = 0
-                elif from_source:
-                    if count_cmd < len(comd):
-                        count_cmd += 1
+        command = struct.pack('!' + str(len(cmd)) + 's1s', cmd, '\x0A')
+        sock.sendto(command, (self.iff_new_ip, self.uboot_port))
+        prompt = False
+        len_command = 0
+
+        while prompt is False:
+            srecv = select.select([sock], [], [], 0.5)
+            # data
+            if srecv[0]:
+                try:
+                    data = sock.recvfrom(1024)
+                    if data[1][0] != self.iff_new_ip:
+                        continue
+                    recv_data = data[0]
+                    # check when prompt (Marvell>>) is available,
+                    if ("Marvell>> " == recv_data \
+                        or 'Override Env parameters? (y/n)' == recv_data):
+                        if 'Override Env parameters? (y/n)' == recv_data:
+                            print recv_data
+                        prompt = True
+                    # When sending a command U-Boot return the commands
+                    # char by char, we do this so we don't display it.
+                    elif len_command < len(command):
+                        len_command += 1
+                        continue
                     else:
                         # to handle the printenv and other case
                         # when answer is given one letter at a time...
-                        write = sys.stdout.write
-                        write(str(send_data))
-                        sys.stdout.flush()
-                    send_ans += send_data
-        except (socket.error, KeyboardInterrupt) as err:
-            if self.debug :
-                logging.error("Sending command %s on %d : %s"
-                              , cmd_mem, self.response_port, err)
-            sock.close()
-            sock_res.close()
-            sys.exit(1)
+                        if display:
+                            write = sys.stdout.write
+                            write(str(recv_data))
+                            sys.stdout.flush()
+                except (socket.error, KeyboardInterrupt, SystemExit) as err:
+                    if self.debug:
+                        logging.error("Sending command %s on %d : %s",
+                              cmd, self.response_port, err)
+        sock.close()
+        return 42
+
 
 def main():
     ''' launch everything '''
@@ -163,90 +153,110 @@ def main():
                       help="Address MAC of the targeted device " \
                       "(00:00:00:00:00:00)"
                       )
-    parser.add_option("-i", "--ip", dest="ip_address", action="store",
+    parser.add_option("-i", "--iface", dest="iface", action="store",
+                      default="eth0",
+                      help="Interface to use to send LUMP packet to.\n"
+                      "Default is eth0.\n"
+                      )
+    parser.add_option("", "--ip", dest="force_ip", action="store",
                       default=None,
-                      help="Address IP of the targeted device (Mandatory)\n" \
-                      " (W.X.Y.Z where 0 > W, X, Y, Z < 255)"
+                      help="Force the IP address if you don't want plum, " \
+                      "finding a free IP on your subnet for you."
                       )
-    parser.add_option("-b", "--broadcast", dest="brd_address", action="store",
-                      default="255.255.255.255",
-                      help="Broadcast address to send LUMP packet to.\n"
-                      "Default is 255.255.255.255.\n"
-                      )
-    parser.add_option("-p", "--progress", dest="progress", action="store_const",
-                      const=True, help="Print a progess bar," \
+    parser.add_option("-p", "--progress", dest="progress",
+                      action="store_const", default=False, const=True,
+                      help="Print a pretty progess bar," \
                       " use with a script shebang only.")
+    parser.add_option("-w", "--wait", dest="wait", action="store_const",
+                      default=False, const=True,
+                      help="Wait for the product to boot.\n" \
+                      "Note : Require the -m/--mac option to be set.\n")
     parser.add_option("-D", "--debug", dest="loglevel", action="store_const",
                       const=logging.DEBUG, help="Output debugging information")
 
     plum_session = Plum()
 
-    if '-D' in sys.argv or \
-       '--debug' in sys.argv:
+    if '-D' in sys.argv or '--debug' in sys.argv:
         plum_session.debug = True
         logging.basicConfig(level=logging.DEBUG, format='%(message)s')
     else:
         logging.basicConfig(level=logging.INFO, format='%(message)s')
 
     options, _ = parser.parse_args()
-    if (options.mac is None or \
-        options.ip_address is None ) and \
-        ( len(sys.argv) == 1):
-        logging.info("You should at least set theses options : ")
-        logging.info(" - MAC adress (00:00:00:00:00)")
-        logging.info(" - IP address (W.X.Y.Z)")
-        parser.print_help()
-        return 1
-    elif os.path.isfile(sys.argv[len(sys.argv)-1]):
-        plum_session.is_script = True
-        plum_script.set_setup(plum_session, sys.argv[len(sys.argv)-1])
-    else:
-        plum_session.iff_mac_dest = options.mac
-        plum_session.iff_new_ip = options.ip_address
-        plum_session.broadcast_address = options.brd_address
+    plum_session.iff_mac_dest = options.mac
 
+    if options.mac is None:
+        logging.info("WARNING : The first product to reboot will be catched !")
+        logging.info("It may not be yours if multiple product reboot at the "
+                     "same time on your network.")
+        plum_session.iff_mac_dest = "00:00:00:00:00:00"
+
+    if len(sys.argv) >= 2 and os.path.isfile(sys.argv[1]):
+        plum_session.is_script = True
+
+    try:
+        ip, mac, netmask, bcast = plum_net.get_iface_info(options.iface)
+    except IOError:
+        logging.error("Your network interface is not reachable." +
+                      " Is %s correct ?", options.iface)
+        return 1
+
+    plum_session.broadcast_address = bcast
+    # This IP is used afterwards when TFTP'ing files
+    if options.force_ip is not None:
+        plum_session.iff_new_ip = options.force_ip
+    else:
+        plum_session.iff_new_ip = plum_net.find_free_ip(options.iface,
+                                                    ip, mac, netmask)
+
+    # Check MAC and IP value.
     if not plum_net.is_valid_mac(plum_session.iff_mac_dest):
         logging.error("Your MAC address is not in the proper format." +
                       "\'00:00:00:00:00:00\' format is awaited. Given %s" \
                               % plum_session.iff_mac_dest)
         return 1
-    if not plum_net.is_valid_ipv4(plum_session.iff_new_ip):
-        logging.error("Your IP is not in the proper format." +
-                      "\'W.X.Y.Z\' format is awaited. Given %s" \
-                      % plum_session.iff_new_ip)
-        return 1
     if not plum_net.is_valid_ipv4(plum_session.broadcast_address):
-        print options.brd_address
-        print plum_session.broadcast_address
         logging.error("Your Broadcast IP is not in the proper format." +
                       "\'W.X.Y.Z\' format is awaited. Given %s" \
                       % plum_session.broadcast_address)
         return 1
+    if not plum_net.is_valid_ipv4(plum_session.iff_new_ip):
+        logging.error("Your product IP is not in the proper format." +
+                      "\'W.X.Y.Z\' format is awaited. Given %s" \
+                      % plum_session.iff_new_ip)
+        return 1
 
-    if not plum_lump.send_lump(plum_session):
+    if not plum_lump.lump(plum_session):
         logging.debug("LUMP was not sent/receveid by the target")
 
     if plum_session.is_script:
-        plum_script.execute(plum_session, sys.argv[len(sys.argv)-1], 
-                            options.progress)
-    else:
-        exit_code = 42
-        while(exit_code):
-            exit_code = plum_session.launch_cmd(raw_input("Marvell>> "))
+        plum_script.execute(plum_session, sys.argv[1], options.progress)
+        # You can't wait if there is no MAC.
+        if options.wait and (plum_session.iff_mac_dest != "00:00:00:00:00:00"):
+            # WAIT FOR THE DEVICE TO BOOT
+            logging.info("Waiting for your product to reboot...")
+            time.sleep(60 * 7)  # Wait 7mn for the product to apply capsule
+            ip = plum_lump.get_ipcomm_info(plum_session)
+            if ip is not None:
+                logging.info("Your product is available at %s" % ip)
+            else:
+                logging.info("Timeout : Unable to get your product IP.")
+        return 0
+
+    exit_code = 42
+    while(exit_code):
+        exit_code = plum_session.invoke(raw_input("Marvell>> "),
+                                            not options.progress)
 
     return 0
 
-if __name__ == '__main__' :
-    if sys.platform != "win32" :
+if __name__ == '__main__':
+    if sys.platform != "win32":
         if os.geteuid() != 0:
             print "You must be administrator/root to run this program."
             sys.exit(1)
 
     try:
         sys.exit(main())
-    except (KeyboardInterrupt, EOFError):
-        sys.exit(0)
-    except TypeError:
-        sys.stderr.write('What are you doing ? Read the manual please.\n')
-        sys.stderr.flush()
-        sys.exit(0)
+    except (KeyboardInterrupt, EOFError, SystemExit, KeyError):
+        pass

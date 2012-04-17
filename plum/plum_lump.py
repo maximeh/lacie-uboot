@@ -34,11 +34,11 @@ and not hammer down the network.
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-from multiprocessing import Process, Value
+import select
 import socket
 import struct
 import sys
-import time
+from time import clock, sleep
 
 sys.dont_write_bytecode = True
 
@@ -50,111 +50,58 @@ IFF_MAC_TYPE  = 0x4D414340
 IFF_MACD_TYPE = 0x4D414344
 IFF_MACS_TYPE = 0x4D414353
 
-def launch_server(plum_session, prompt):
+
+def lump(session):
     '''
-    launch the server method in a separate process
-    return the process created or None.
-    '''
-
-    try:
-        serv = Process(target=udp_server, \
-                       args=( plum_session.iff_new_ip, \
-                              plum_session.uboot_port, prompt, ))
-        serv.start()
-        return serv
-    except (socket.error, KeyboardInterrupt):
-        logging.error("Sending LUMP for 60s, no Marvel prompt !")
-        serv.terminate()
-        return None
-
-def udp_server(iff_new_ip, uboot_port, prompt_check):
-    ''' connect to the netconsole until answer is given back '''
-
-    socket.setdefaulttimeout(60)
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-    try:
-        sock.bind(('', uboot_port))
-    except socket.error, err:
-        logging.error("Couldn't be a udp server on port %d : %s",
-                      uboot_port, err)
-        sock.close()
-        return None
-
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
-    from_source = False
-    while prompt_check.value:
-        try:
-            serv_data = sock.recvfrom(1024)
-            if serv_data[1][0] == iff_new_ip:
-                from_source = True
-            serv_data = serv_data[0]
-            # check when prompt (Marvell>>) is available,
-            # then out to the next while to input command and send them !
-            if "Marvell>> " == serv_data and from_source:
-                prompt_check.value = 0
-            serv_data = ""
-        except (socket.error, KeyboardInterrupt):
-            return None
-
-def send_lump(session):
-    '''
-    This function will send LUMP packet to a target during 60s
-    Then will ask the users to reboot the target manually.
+    It will ask the users to reboot the target manually and then
+    it will send LUMP packet to a target during 60s.
     '''
 
-    # Launch the server to listen while sending
-    # We use a shared value to stop both client
-    # and server when "Marvell>> " is received.
-    # Note the space.
-    prompt = Value('i', 1)
-    server = launch_server(session, prompt) 
-
-    lump_ok = True
-
-    # Create an array with 6 cases, each one is a member (int) of the MAC 
+    # Create an array with 6 cases, each one is a member (int) of the MAC
     fields_macdest = [int(x, 16) for x in session.iff_mac_dest.split(':')]
 
-    # Create an array with 4 cases, each one is a member (int) of the IP 
+    # Create an array with 4 cases, each one is a member (int) of the IP
     fields_ip = [int(x) for x in session.iff_new_ip.split('.')]
 
-    pkt = struct.pack('!I' # LUMP
-                      'L'  # Length of LUMP
-                      'I'  # MACD
-                      'L'  # Length of MACD
-                      'I'  # MAC@
-                      'L'  # Length of MAC@ field
-                      '2x' # fill space because MAC take only 6 bytes
-                      '6s' # MAC address of target
-                      'I'  # IPS
-                      'L'  # Length of IPS
-                      'I'  # IP@
-                      'L'  # Length of IP@
-                      '4s' # IP of the target
-                      'I'  # MACS
-                      'L'  # Length of MACS
-                      'I'  # MAC address of source
-                      'L'  # Length of MAC@
-                      '8x',  # Empty MAC (should be 6x but according to wireshark, we need the extra)
+    # Note : The empty MAC are 8 bytes in length according to the reverse
+    # engineering done with WireShark. Don't know why exactly...
+    pkt = struct.pack('!I'   # LUMP
+                      'L'    # Length of LUMP
+                      'I'    # MACD
+                      'L'    # Length of MACD
+                      'I'    # MAC@
+                      'L'    # Length of MAC@ field
+                      '2x'   # fill space because MAC take only 6 bytes
+                      '6s'   # MAC address of target
+                      'I'    # IPS
+                      'L'    # Length of IPS
+                      'I'    # IP@
+                      'L'    # Length of IP@
+                      '4s'   # IP of the target
+                      'I'    # MACS
+                      'L'    # Length of MACS
+                      'I'    # MAC address of source
+                      'L'    # Length of MAC@
+                      '8x',  # Empty MAC
                       IFF_LUMP_TYPE,
                       0x44,
                       IFF_MACD_TYPE,
                       0x10,
                       IFF_MAC_TYPE,
                       0x8,
-                      struct.pack('!6B', *fields_macdest), # int[] -> byte[]
+                      struct.pack('!6B', *fields_macdest),  # int[] -> byte[]
                       IFF_IPS_TYPE,
                       0x0C,
                       IFF_IP_TYPE,
                       0x4,
-                      struct.pack('!4B', *fields_ip), # int[] -> byte[]
+                      struct.pack('!4B', *fields_ip),  # int[] -> byte[]
                       IFF_MACS_TYPE,
                       0x10,
                       IFF_MAC_TYPE,
                       0x8)
 
-    logging.debug("Sending some LUMP / Ctrl-C, waiting for the NAS to start up")
+    logging.debug("Sending some LUMP / Ctrl-C, "
+                  "waiting for the NAS to start up")
     logging.info("Please /!\HARD/!\ reboot the device /!\NOW/!\ ")
 
     timeout = 0
@@ -162,21 +109,101 @@ def send_lump(session):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-    while prompt.value and timeout < session.lump_timeout:
+    try:
+        sock.bind(('', session.uboot_port))
+    except socket.error, err:
+        logging.error("Couldn't be a udp server on port %d : %s",
+                      session.uboot_port, err)
+        sock.close()
+        return None
+
+    lump_ok = False
+    while lump_ok is False and timeout < session.lump_timeout:
         sock.sendto(pkt, (session.broadcast_address, session.request_port))
-        time.sleep(0.2) #Wait for the device to process the LUMP
+        sleep(0.2)  # Wait for the device to process the LUMP
         #Send Ctrl-C (Code ASCII 3 for EXT equivalent of SIGINT for Unix)
         sock.sendto('\3', (session.broadcast_address, session.uboot_port))
-
-        time.sleep(1)
+        srecv = select.select([sock], [], [], 1)
+        # data
+        if srecv[0]:
+            try:
+                serv_data = sock.recvfrom(1024)
+                if serv_data[1][0] != session.iff_new_ip:
+                    continue
+                serv_data = serv_data[0]
+                # check when prompt (Marvell>>) is available,
+                # then out to the next while to input command and send them !
+                if "Marvell>> " == serv_data:
+                    lump_ok = True
+                    break
+            except (socket.error, KeyboardInterrupt, SystemExit):
+                return None
         timeout += 1
 
     if timeout >= session.lump_timeout:
         logging.debug("Sending LUMP for %ds, no response !",
                        session.lump_timeout)
-        sock.close()
         lump_ok = False
 
-    server.terminate()
+    sock.close()
     return lump_ok
 
+
+def tlvs(data):
+    '''TLVs parser generator'''
+    dict_data = {}
+    while data:
+        typ, length = struct.unpack('!4sL', data[:8])
+        value = struct.unpack('!%is' % length, data[8:8 + length])[0]
+        if typ == "INTF" or typ == "IPV4":
+            data = data[8:]  # Skip INTF header
+            continue
+        dict_data[typ.rstrip(' \t\r\n\0')] = value.rstrip(' \t\r\n\0')
+        data = data[8 + length:]
+    return dict_data
+
+
+def get_ipcomm_info(session):
+    '''
+    This function will send LOOK packet to a target
+    Then will parse the INFO packet and return the first found ip.
+    '''
+    ip = None
+    pkt = struct.pack('!4s14x', "\x4c\x4f\x4f\x4b")  # LOOK (at the ring !)
+
+    socket.setdefaulttimeout(60)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    sock.setblocking(0)
+
+    # Listen for the answer
+    try:
+        sock.bind(('', session.response_port))
+    except socket.error, err:
+        print("Couldn't be a udp server on port %d : %s",
+                      session.response_port, err)
+        sock.close()
+        return None
+
+    ip = None
+    tryout = 0  # Number of tries, don't want to stay here forever
+    while ip is None and tryout < 10:
+        sock.sendto(pkt, ('255.255.255.255', session.response_port))
+        stop = clock() + 0.05
+        while stop > clock() and ip is None:
+            try:
+                serv_data = sock.recv(1024)
+            except:
+                continue
+            if len(serv_data) <= 8:
+                continue
+            info = struct.unpack('!4s', serv_data[:4])
+            if info[0] != "INFO":
+                continue
+            data = tlvs(serv_data[8:])  # strip info header
+            if data["MAC"].lower() == session.iff_mac_dest.lower():
+                if data["ADDR"].lower() == session.iff_new_ip.lower():
+                    continue
+                ip = data["ADDR"]
+        tryout += 1
+    return ip
