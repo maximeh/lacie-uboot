@@ -1,4 +1,4 @@
-.TH PLUM 1 "2010 Oct 05"
+.TH PLUM 1 "2012 Jan 25"
 .SH NAME
 plum \- A simple U-Boot netconsole client.
 .SH SYNOPSIS
@@ -24,11 +24,10 @@ Display
 .B plum
 help, options and usage.
 .TP
-.RB \-i " IP", " " \-\-ip= "IP"
+.RB \-i " IFACE", " " \-\-iface= "IFACE"
 Give
 .B plum
-the IP address of the target. It must be in the W.X.Y.Z format where
-each number is > 0 and < 255.
+the IFACE you want to use to communicate with your device.
 .TP
 .RB \-m " MAC", " " \-\-mac= "MAC"
 Give
@@ -36,15 +35,22 @@ Give
 the MAC address of the target. It must be in the 00:00:00:00:00:00 format where
 each hexadecimal number is > 0 and < F.
 .TP
-.RB \-b " BRD_ADDRESS", "" \-\-broadcast= "BRD_ADDRESS"
-Broadcast address to send LUMP packet to. Default is 255.255.255.255.
+.RB \-\-ip " FORCE_IP"
+Force the IP address if you don't want 
+.B plum
+finding a free IP on your subnet for you.
+.RB \-p, \-\-progress
+Use this option with your 
+.B plum 
+script.
+This option will discard the output and print a progress bar 
+to show the progress of your script.
 .TP
-\-p, \-\-progress
-Use this option after the shebang of your plum script.
-This option will output a progress bar to show the progress of 
-your script. Use this when your script does not output anything.
+.RB \-w, \-\-wait
+Use this option if you want to wait for your product to be online.
+This option use IPCONF protocol to detect your product's presence.
 .TP
-\-D, \-\-debug
+.RB \-D, \-\-debug
 Output debugging information.
 .SH SEE ALSO
 nc(1)
