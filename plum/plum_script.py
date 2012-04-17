@@ -34,6 +34,7 @@ plum_script implement methods to read and execute a plum script
 import time
 import sys
 
+
 class ProgressBar:
 
     def __init__(self, size):
@@ -61,66 +62,40 @@ class ProgressBar:
         return str(self.prog_bar)
 
 
-def set_setup(session, file_path):
-    '''
-    Get the setup from the script file
-    It must contains a line with 
-    setup=(ip_or_mac,ip_or_mac)
-    '''
-    script_file = open(file_path , 'r+')
-
-    script = []
-    for i in script_file.readlines():
-        if not ( i == '\n' or i.startswith('#') ):
-            script.append(i.strip().lower())
-    script_file.close()
- 
-    #search the setup
-    for line in script:
-        if "setup=" in line:
-            del script[script.index(line)]
-            conf1 = line.split(' ')[0].split('=')[1]
-            conf2 = line.split(' ')[1].strip()
-            if len(conf1) > len(conf2):
-                session.iff_mac_dest = conf1[:-1]
-                session.iff_new_ip = conf2[1:]
-            else:
-                session.iff_new_ip = conf1[1:]
-                session.iff_mac_dest = conf2[:-1]
-
 def execute(session, file_path, progress):
     '''
-    Read a script file and 
+    Read a script file and
     parse it to launch every command.
+    If progress is asked, then no display.
     '''
 
-    script_file = open(file_path , 'r+')
+    script_file = open(file_path, 'r+')
 
     script = []
     for i in script_file.readlines():
-        if not ( i == '\n' or i.startswith('#') or 'setup=' in i):
-            script.append(i.strip().lower())
+        if not (i == '\n' or i.startswith('#')):
+            script.append(i.strip())
     script_file.close()
 
-    if progress is not None:
+    if progress:
         progess = ProgressBar(100)
         progess.fill_char = '='
         progess.update_percent(0)
 
-    pas = 100/len(script)
+    pas = 100 / len(script)
     for line in script:
-        if progress is not None:
-            progess.update_percent(pas*script.index(line))
-            sys.stdout.write(str(progess)+'\r')
+        if progress:
+            progess.update_percent(pas * script.index(line))
+            sys.stdout.write(str(progess) + '\r')
             sys.stdout.flush()
-        print line
-        session.launch_cmd(line)
+        else:
+            print line
+        session.invoke(line, not progress)
         time.sleep(1)
         #it seems uboot doesn't like being shaked a bit
 
-    if progress is not None:
+    if progress:
         progess.update_percent(100)
-        sys.stdout.write(str(progess)+'\r')
+        sys.stdout.write(str(progess) + '\r')
         sys.stdout.flush()
         print
-
