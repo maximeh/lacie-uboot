@@ -27,7 +27,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 import os
 from setuptools import setup, find_packages
 
@@ -38,6 +37,13 @@ from setuptools import setup, find_packages
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+# Build opentftp
+root=os.path.dirname(__file__)
+if root != '':
+    os.chdir(root)
+
+os.system("g++ opentftp/opentftpd.cpp -oopentftp/opentftpd -lpthread")
+
 setup(
     name = 'plum',
     version = '0.1',
@@ -46,9 +52,10 @@ setup(
     ],
     zip_safe = True,
     install_requires = [''],
-    scripts = ['bin/plum'],
-    data_files=[('/usr/share/man/man1',['doc/plum.1']),],
-
+    scripts = ['bin/plum', 'bin/capsup'],
+    data_files=[('/usr/share/man/man1', ['doc/plum.1']),
+                ('/usr/bin/', ['opentftp/opentftpd']),
+                ('/etc/', ['opentftp/opentftp.ini'])],
     author = 'Maxime Hadjinlian',
     author_email = 'maxime.hadjinlian@gmail.com',
 
@@ -75,5 +82,7 @@ setup(
         "Topic :: System :: Shells",
         "Topic :: Terminals :: Terminal Emulators/X Terminals",
     ],
-
 )
+
+# Clean opentftp dir
+os.system("rm opentftp/opentftpd")

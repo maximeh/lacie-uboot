@@ -1,0 +1,144 @@
+#!/bin/bash
+
+set -e
+
+exit_error() {
+    for pid in $(ps aux | grep -v grep |grep opentftp | awk '{print $2}');
+    do
+        sudo kill ${pid};
+    done
+    [ -f ${plum_script} ] && rm ${plum_script}
+    [ -d ${tftpd_dir} ] && rm -Rf ${tftpd_dir}
+    exit
+}
+
+show_usage () {
+    cat << EOF
+Usage: $0 [OPTIONS] <FILE_PATH>
+Update a LaCie NAS system with the given file.
+If your file ends with .capsule, we will update the system.
+If your file ends with .bin or .kwb, we will update U-Boot.
+
+  -h        show this message
+  -m        MAC address of the product to flash
+  -i        IFACE, specify your network inteface if not default (eth0)
+  --ip      If you don't want to use the DHCP use this option to force the product's IP.
+  -d        show debug message
+
+EOF
+    exit 1
+}
+
+parse_options() {
+    while getopts "hm:i:d" option; do
+        case $option in
+            h)
+                show_usage
+                exit 0
+                ;;
+            m)
+                MAC=$OPTARG
+                ;;
+            i)
+                IFACE=$OPTARG
+                ;;
+            d)
+                DEBUG="-D"
+                ;;
+        esac
+    done
+}
+
+prepare_plum() {
+    # Prepare plum script
+    local type=$1
+    local plum_script=$2
+
+    if [ $type == "bin" ] || [ $type == "kwb" ] ;then
+    cat > $plum_script <<- EOF
+#!${plum_path}
+setenv serverip ${MY_IP}
+setenv ipaddr ${RAND_IP}
+bubt $filename
+y
+reset
+
+EOF
+    else
+    cat > $plum_script <<- EOF
+#!${plum_path}
+setenv serverip ${MY_IP}
+setenv ipaddr ${RAND_IP}
+tftp 0x800000 uImage
+set bootargs console=ttyS0,115200 tftp_server='${MY_IP}' static_addr='${RAND_IP}'
+bootm
+
+EOF
+    fi
+    chmod +x ${plum_script}
+}
+
+trap exit_error INT TERM EXIT
+plum_path=$(which plum)
+plum_script=$(mktemp)
+tftpd_dir="/tmp/tftp"
+[ -d "${tftpd_dir}" ] && rm -Rf ${tftpd_dir}
+mkdir -p ${tftpd_dir}
+
+if ! which opentftpd &> /dev/null; then
+    echo "Error: opentftpd not found"
+    echo "You need to re-install plum."
+    exit 0
+fi
+
+IFACE="eth0"
+DEBUG="-p"
+OPENTFTPD=$(which opentftpd)
+parse_options "${@}"
+shift $((OPTIND - 1))
+file=$1
+filename=$(basename $file)
+if [ -z "$file" ]; then
+    show_usage
+    exit 1
+fi
+
+if [ "$(whoami)" != "root" ]; then
+    echo "You should be root to execute this script"
+    exit 1
+fi
+
+MY_IP=$(/sbin/ifconfig ${IFACE} | grep 'inet ' | cut -d: -f2 | awk '{ print $1}')
+[ -z "${MY_IP}" ] && echo "Are you sure ${IFACE} is correct ?" && exit 1 
+MY_BCAST=$(/sbin/ifconfig ${IFACE} | grep 'Bcast:' | cut -d: -f4 | awk '{print $1}')
+MY_MAC=$(/sbin/ifconfig ${IFACE} | grep HWaddr | cut -d ' ' -f 11)
+RAND_IP=$(python -c 'import plum.plum_net; print plum.plum_net.find_free_ip("'${IFACE}'", "'${MY_IP}'","'${MY_MAC}'", "'${MY_BCAST}'")')
+
+file_format=$(echo ${file##*.})
+case $file_format in
+    "capsule")
+        # Decapsule the given file into temporary directory
+        sed '1,/<\/Capsule>/d' $file | tar xf - -C $tftpd_dir || return 1
+        ;;
+    "bin" | "kwb")
+        # Move U-Boot into ptftpd directory
+        cp $file $tftpd_dir
+        ;;
+    *)
+        show_usage
+        echo "File extension not available. Only .capsule, .bin or .kwb"
+        ;;
+esac
+prepare_plum ${file_format} ${plum_script}
+
+# Start TFTP server
+${OPENTFTPD} -i /etc/opentftp.ini &
+SERV_PID=$!
+
+# Exec plum script
+${plum_script} -m ${MAC} -i ${IFACE} --ip ${RAND_IP} -w ${DEBUG}
+
+kill $SERV_PID > /dev/null 2>&1
+[ -f ${plum_script} ] && rm ${plum_script}
+[ -d ${tftpd_dir} ] && rm -Rf ${tftpd_dir}
+
