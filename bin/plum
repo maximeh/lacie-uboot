@@ -26,13 +26,21 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
+import os
 import sys
 
 from plum.plum import main
 
+if sys.platform != "win32" :
+    if os.geteuid() != 0:
+        print "You must be administrator/root to run this program."
+        sys.exit(1)
+
 try:
     sys.exit(main())
-except KeyboardInterrupt:
+except (KeyboardInterrupt, EOFError, SystemExit, KeyError):
     pass
-
+except TypeError:
+    sys.stderr.write('What are you doing ? Read the manual please.\n')
+    sys.stderr.flush()
+    sys.exit(0)
