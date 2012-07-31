@@ -28,47 +28,49 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
-from setuptools import setup, find_packages
+from setuptools import setup
 
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
 # README file and 2) it's easier to type in the README file than to put a raw
 # string in below ...
+
+
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 # Build opentftp
-root=os.path.dirname(__file__)
+root = os.path.dirname(__file__)
 if root != '':
     os.chdir(root)
 
 os.system("g++ opentftp/opentftpd.cpp -oopentftp/opentftpd -lpthread")
 
 setup(
-    name = 'plum',
-    version = '0.1',
-    packages = [
+    name='plum',
+    version='0.1',
+    packages=[
         'plum',
     ],
-    zip_safe = True,
-    install_requires = [''],
-    scripts = ['bin/plum', 'bin/capsup'],
+    zip_safe=True,
+    install_requires=[''],
+    scripts=['bin/plum', 'bin/capsup'],
     data_files=[('/usr/share/man/man1', ['doc/plum.1']),
                 ('/usr/bin/', ['opentftp/opentftpd']),
                 ('/etc/', ['opentftp/opentftp.ini'])],
-    author = 'Maxime Hadjinlian',
-    author_email = 'maxime.hadjinlian@gmail.com',
+    author='Maxime Hadjinlian',
+    author_email='maxime.hadjinlian@gmail.com',
 
-    maintainer = 'Maxime Hadjinlian',
-    maintainer_email = 'maxime.hadjinlian@gmail.com',
+    maintainer='Maxime Hadjinlian',
+    maintainer_email='maxime.hadjinlian@gmail.com',
 
-    description = 'Python LaCie das U-Boot Milchkuh',
+    description='Python LaCie das U-Boot Milchkuh',
     long_description=read('README.md'),
-    url = 'http://f00.fr',
+    url='http://f00.fr',
 
-    license = 'GPL',
+    license='GPL',
 
-    keywords = 'plum uboot lacie netconsole',
+    keywords='plum uboot lacie netconsole',
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",

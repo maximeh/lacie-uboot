@@ -31,7 +31,7 @@ import sys
 
 from plum.plum import main
 
-if sys.platform != "win32" :
+if sys.platform != "win32":
     if os.geteuid() != 0:
         print "You must be administrator/root to run this program."
         sys.exit(1)

@@ -112,7 +112,7 @@ MY_IP=$(/sbin/ifconfig ${IFACE} | grep 'inet ' | cut -d: -f2 | awk '{ print $1}'
 [ -z "${MY_IP}" ] && echo "Are you sure ${IFACE} is correct ?" && exit 1 
 MY_BCAST=$(/sbin/ifconfig ${IFACE} | grep 'Bcast:' | cut -d: -f4 | awk '{print $1}')
 MY_MAC=$(/sbin/ifconfig ${IFACE} | grep HWaddr | cut -d ' ' -f 11)
-RAND_IP=$(python -c 'import plum.plum_net; print plum.plum_net.find_free_ip("'${IFACE}'", "'${MY_IP}'","'${MY_MAC}'", "'${MY_BCAST}'")')
+RAND_IP=$(python -c 'import plum.plum_net; print plum.network.find_free_ip("'${IFACE}'", "'${MY_IP}'","'${MY_MAC}'", "'${MY_BCAST}'")')
 
 file_format=$(echo ${file##*.})
 case $file_format in

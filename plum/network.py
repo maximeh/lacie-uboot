@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-plum_net is a small net library with a few utils functions.
+network is a small library with a few utils functions.
 '''
 
 # Author:     Maxime Hadjinlian
@@ -35,10 +35,11 @@ import fcntl
 import logging
 from random import randint
 import re
-import select
+from select import select
 import socket
-from struct import pack
+from struct import pack, unpack
 import sys
+from time import clock
 sys.dont_write_bytecode = True
 
 
@@ -87,18 +88,18 @@ def is_valid_mac(mac):
     return re.compile(validator).search(mac)
 
 
-def get_iface_info(ifn):
+def iface_info(ifn):
     sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     info = fcntl.ioctl(sck.fileno(), 0x8927,  pack('256s', ifn[:15]))
     mac = ''.join(['%02x:' % ord(char) for char in info[18:24]])[:-1]
 
     ip_str = socket.inet_ntoa(fcntl.ioctl(sck.fileno(), 0x8915,
-                              pack('256s', ifn[:15]))[20:24])
+        pack('256s', ifn[:15]))[20:24])
     ip = [int(x) for x in ip_str.split(".")]
 
     netmask_str = socket.inet_ntoa(fcntl.ioctl(sck.fileno(), 0x891b,
-                                   pack('256s', ifn[:15]))[20:24])
+        pack('256s', ifn[:15]))[20:24])
     netmask = [int(x) for x in netmask_str.split(".")]
 
     bcast = [0, 0, 0, 0]
@@ -109,7 +110,7 @@ def get_iface_info(ifn):
     return ip_str, mac, netmask_str, bcast
 
 
-def get_random_ip_in_subnet(ip, netmask):
+def random_ip_in_subnet(ip, netmask):
     netmask_bin = ''.join([bin(int(x) + 256)[3:] for x in netmask.split('.')])
     netmask_length = sum([int(x) for x in netmask_bin])
 
@@ -131,10 +132,6 @@ def get_random_ip_in_subnet(ip, netmask):
     ip_bin = ''.join([bin(int(x) + 256)[3:] for x in ip.split('.')])
     ip_bin = ip_bin[:-change_length] + change
     return '.'.join((str(int(ip_bin[x * 8:(x * 8) + 8], 2)) for x in range(4)))
-
-
-def prettify(mac_string):
-    return ':'.join('%02x' % ord(b) for b in mac_string)
 
 
 def send_arp(iface, sender_ip, sender_mac, target_ip, arptype):
@@ -193,16 +190,16 @@ def send_arp(iface, sender_ip, sender_mac, target_ip, arptype):
     # send the ARP
     sock.send(packet)
     while 1:
-        srecv = select.select([sock], [], [], 0.5)
+        srecv = select([sock], [], [], 0.5)
         # data
         if srecv[0]:
             try:
                 data = sock.recv(42)  # ARP default packet size
             except:
                 continue
-            if data[12:14] == b'\x08\x06' and \
-               data[20:22] == ARPOP_REPLY:  # check opcode is reply
-                tgt_mac = prettify(data[6:12])
+            # check opcode is reply
+            if data[12:14] == b'\x08\x06' and data[20:22] == ARPOP_REPLY:
+                tgt_mac = ':'.join('%02x' % ord(b) for b in data[6:12])
                 logging.debug("%s is at %s" % (target_ip, tgt_mac))
                 sock.close()
                 return True
@@ -221,7 +218,67 @@ def find_free_ip(iface, ip, mac, netmask):
     exist = True
     test_ip = None
     while exist is True:
-        test_ip = get_random_ip_in_subnet(ip, netmask)
+        test_ip = random_ip_in_subnet(ip, netmask)
         exist = send_arp(iface, ip, mac, test_ip, 'REQUEST')
     logging.debug("Using %s IP." % test_ip)
     return test_ip
+
+
+def tlvs(data):
+    '''TLVs parser generator'''
+    dict_data = {}
+    while data:
+        typ, length = unpack('!4sL', data[:8])
+        value = unpack('!%is' % length, data[8:8 + length])[0]
+        if typ == "INTF" or typ == "IPV4":
+            data = data[8:]  # Skip INTF header
+            continue
+        dict_data[typ.rstrip(' \t\r\n\0')] = value.rstrip(' \t\r\n\0')
+        data = data[8 + length:]
+    return dict_data
+
+
+def ipcomm_info(receive_port, mac_target, ip_target):
+    '''
+    This function will send LOOK packet to a target
+    Then will parse the INFO packet and return the first found ip.
+    '''
+    ip = None
+    pkt = pack('!4s14x', "\x4c\x4f\x4f\x4b")  # LOOK (at the ring !)
+
+    socket.setdefaulttimeout(60)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    sock.setblocking(0)
+
+    # Listen for the answer
+    try:
+        sock.bind(('', receive_port))
+    except socket.error, err:
+        print("Couldn't be a udp server on port %d : %s",
+          receive_port, err)
+        sock.close()
+        return None
+
+    ip = None
+    tryout = 0  # Number of tries, don't want to stay here forever
+    while ip is None and tryout < 10:
+        sock.sendto(pkt, ('255.255.255.255', receive_port))
+        stop = clock() + 0.05
+        while stop > clock() and ip is None:
+            try:
+                serv_data = sock.recv(1024)
+            except:
+                continue
+            if len(serv_data) <= 8:
+                continue
+            info = unpack('!4s', serv_data[:4])
+            if info[0] != "INFO":
+                continue
+            data = tlvs(serv_data[8:])  # strip info header
+            if data["MAC"].lower() == mac_target.lower():
+                if data["ADDR"].lower() == ip_target.lower():
+                    continue
+                ip = data["ADDR"]
+        tryout += 1
+    return ip

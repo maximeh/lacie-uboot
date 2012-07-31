@@ -2,8 +2,8 @@
 This is the plum module. It contains plum which allow you to connect
 to the net console of every LaCie product.
 
-It also provide a client/server class to send a LUMP, 
-(LaCie U-Boot Magi Packet). 
+It also provide a client/server class to send a LUMP,
+(LaCie U-Boot Magi Packet).
 
 You can easily use this module into your programm to catch a netconsole and
 send some predefined command.
