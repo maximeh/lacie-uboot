@@ -32,6 +32,7 @@ plum allow you to discuss with the netconsol of u-boot.
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+from math import floor
 import logging
 import os
 import readline
@@ -44,7 +45,7 @@ import sys
 from time import sleep
 sys.dont_write_bytecode = True
 
-from network import iface_info, find_free_ip, is_valid_mac, is_valid_ipv4
+from network import iface_info, find_free_ip, is_valid_mac, is_valid_ipv4, ipcomm_info
 
 
 class Plum(object):
@@ -63,6 +64,7 @@ class Plum(object):
         self.uboot_port = 6666
         self.lump_timeout = 120
         self.script = None
+        self.do_wait = False
         self.progress = False
         self.debug = False
 
@@ -74,11 +76,25 @@ class Plum(object):
             logging.error("%s does not exists." % path_file)
         self.script = path_file
 
-    def print_progress(self, new_progress):
+    def do_progress(self, new_progress):
         '''
         If set to true, we will print a progress bar instead of the output.
         '''
         self.progress = new_progress
+
+    # Output example: [=======   ] 75%
+    # width defines bar width
+    # percent defines current percentage
+    def print_progress(self, width, percent):
+        marks = floor(width * (percent / 100.0))
+        spaces = floor(width - marks)
+
+        loader = '[' + ('=' * int(marks)) + (' ' * int(spaces)) + ']'
+
+        sys.stdout.write("%s %d%%\r" % (loader, percent))
+        if percent >= 100:
+            sys.stdout.write("\n")
+        sys.stdout.flush()
 
     def wait_at_reboot(self, wait):
         '''
@@ -315,33 +331,41 @@ class Plum(object):
 
         if self.script is not None:
             with open(self.script, 'r+') as script:
+                script_cmd = script.readlines()
+
+            if self.progress:
+                # setup progress_bar
+                p_width = 60
+                p_pas = p_width / len(script_cmd)
+                p_percent = 0
+
+            for cmd in script_cmd:
 
                 if self.progress:
-                    # setup progress_bar
-                    p_width = 60
-                    p_pas = p_width / len(script)
-                    sys.stdout.write("[%s]" % (" " * p_width))
-                    sys.stdout.flush()
-                    sys.stdout.write("\b" * (p_width + 1))  # return to start of line, after '['
+                    # update the bar
+                    self.print_progress(p_width, p_percent)
+                    p_percent += p_pas
 
-                for cmd in script:
-                    if cmd == '\n' or cmd.startswith('#'):
-                        continue
+                if cmd == '\n' or cmd.startswith('#'):
+                    continue
 
-                    if self.progress:
-                        # update the bar
-                        sys.stdout.write("#" * p_pas)
-                        sys.stdout.flush()
-                    else:
-                        print cmd
-                    self.invoke(cmd, display=False)
-                    sleep(1)  # it seems uboot doesn't like being shaked a bit
+                if not self.progress:
+                    print cmd.strip() + " => ",
+
+                self.invoke(cmd.strip(), display=not self.progress)
+                sleep(1)  # it seems uboot doesn't like being shaked a bit
+
+            if self.progress:
+                self.print_progress(p_width, 100)
+
             # You can't wait if there is no MAC.
             if self.do_wait and (self.mac_target != "00:00:00:00:00:00"):
+                # Some command output may be stuck in the pipe
+                sys.stdout.flush()
                 # WAIT FOR THE DEVICE TO BOOT
                 logging.info("Waiting for your product to reboot...")
                 sleep(60 * 7)  # Wait 7mn, it should let the device to boot to find info.
-                ip = self.ipcomm_info(self.receive_port, self.mac_target, self.ip_target)
+                ip = ipcomm_info(self.receive_port, self.mac_target, self.ip_target)
                 if ip is None:
                     logging.info("Timeout : Unable to get your product IP.")
                     return 1
@@ -361,6 +385,8 @@ def main():
     from argparse import RawTextHelpFormatter
 
     parser = argparse.ArgumentParser(prog='plum', formatter_class=RawTextHelpFormatter)
+    parser.add_argument('script', metavar='file', type=str, nargs='?',
+                       help=argparse.SUPPRESS)
     parser.add_argument("-m", "--mac", dest="mac", action="store",
                       default=None,
                       help="Address MAC of the targeted device "
@@ -396,6 +422,7 @@ def main():
         logging.basicConfig(level=logging.INFO, format='%(message)s')
 
     options = parser.parse_args()
+
     setup = {'mac_target': options.mac, 'iface': options.iface}
     if options.force_ip is not None:
         setup['ip_target'] = options.force_ip
@@ -404,10 +431,10 @@ def main():
         return 1
 
     session.wait_at_reboot(options.wait)
-    session.print_progress(options.progress)
+    session.do_progress(options.progress)
 
-    if len(sys.argv) >= 2 and os.path.isfile(sys.argv[1]):
-        session.load_script(sys.argv[1])
+    if options.script is not None and os.path.isfile(options.script):
+        session.load_script(options.script)
 
     session.run()
 
