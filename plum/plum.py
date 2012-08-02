@@ -128,7 +128,10 @@ class Plum(object):
 
         # This IP is used afterwards when TFTP'ing files
         if ('ip_target' not in net_dict) or (net_dict['ip_target'] is None):
-            net_dict['ip_target'] = find_free_ip(net_dict['iface'], ip, mac, netmask)
+            if sys.platform == "darwin":
+                logging.error("You need to specify an IP to assign to the device.")
+                return 1
+            net_dict['ip_target'] = find_free_ip(net_dict['iface'], ip, netmask)
 
         # Check MAC and IP value.
         if not is_valid_mac(net_dict['mac_target']):
@@ -399,12 +402,11 @@ def main():
                       )
     parser.add_argument("--ip", dest="force_ip", action="store",
                       default=None,
-                      help="Force the IP address if you don't want plum, "
-                      "finding a free IP on your subnet for you."
+                      help="Specify the IP address to assign to the device."
                       )
     parser.add_argument("-p", "--progress", dest="progress",
                       action="store_const", default=False, const=True,
-                      help="Print a pretty progess bar,"
+                      help="Print a pretty progress bar,"
                       " use with a script shebang only.")
     parser.add_argument("-w", "--wait", dest="wait", action="store_const",
                       default=False, const=True,

@@ -33,6 +33,7 @@ network is a small library with a few utils functions.
 
 import fcntl
 import logging
+import os
 from random import randint
 import re
 from select import select
@@ -41,6 +42,9 @@ from struct import pack, unpack
 import sys
 from time import clock
 sys.dont_write_bytecode = True
+
+if sys.platform == "darwin":
+    from SystemConfiguration import *
 
 
 def is_valid_ipv4(ip_v4):
@@ -88,7 +92,37 @@ def is_valid_mac(mac):
     return re.compile(validator).search(mac)
 
 
+def iface_info_mac(iface):
+    ds = SCDynamicStoreCreate(None, 'GetIPv4Addresses', None, None)
+    # Get all keys matching pattern State:/Network/Service/[^/]+/IPv4
+    pattern = SCDynamicStoreKeyCreateNetworkServiceEntity(None,
+                                                          kSCDynamicStoreDomainState,
+                                                          kSCCompAnyRegex,
+                                                          kSCEntNetIPv4)
+    patterns = CFArrayCreate(None, (pattern, ), 1, kCFTypeArrayCallBacks)
+    valueDict = SCDynamicStoreCopyMultiple(ds, None, patterns)
+
+    for serviceDict in valueDict.values():
+        if serviceDict[u'InterfaceName'] == iface:
+            ip_str = serviceDict[u'Addresses'][0]
+            netmask_str = serviceDict[u'SubnetMasks'][0]
+
+            ip = [int(x) for x in ip_str.split(".")]
+            netmask = [int(x) for x in netmask_str.split(".")]
+            bcast = [0, 0, 0, 0]
+            for i in range(4):
+                bcast[i] = ip[i] | (~netmask[i] & 0xFF)
+            bcast = ".".join([str(x) for x in bcast])
+            mac = serviceDict[u'NetworkSignature'].split('RouterHardwareAddress=')[1]
+
+            return ip_str, mac, netmask_str, bcast
+
+
 def iface_info(ifn):
+
+    if sys.platform == "darwin":
+        return iface_info_mac(ifn)
+
     sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     info = fcntl.ioctl(sck.fileno(), 0x8927,  pack('256s', ifn[:15]))
@@ -154,6 +188,7 @@ def send_arp(iface, sender_ip, sender_mac, target_ip, arptype):
     | Destination IP | ... Frame Length: 42 ...
     +----------------+
     """
+
     ARPOP_REQUEST = pack('!H', 0x0001)
     ARPOP_REPLY = pack('!H', 0x0002)
     packet = b''
@@ -217,7 +252,7 @@ def find_free_ip(iface, ip, mac, netmask):
     '''
     exist = True
     test_ip = None
-    while exist is True:
+    while exist:
         test_ip = random_ip_in_subnet(ip, netmask)
         exist = send_arp(iface, ip, mac, test_ip, 'REQUEST')
     logging.debug("Using %s IP." % test_ip)

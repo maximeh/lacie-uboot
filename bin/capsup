@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 exit_error() {
     for pid in $(ps aux | grep -v grep |grep opentftp | awk '{print $2}');
     do
@@ -21,8 +19,8 @@ If your file ends with .bin or .kwb, we will update U-Boot.
 
   -h        show this message
   -m        MAC address of the product to flash
-  -i        IFACE, specify your network inteface if not default (eth0)
-  --ip      If you don't want to use the DHCP use this option to force the product's IP.
+  -I        IFACE, specify your network inteface if not default (eth0)
+  -i        To specify the IP address to assign to the device.
   -d        show debug message
 
 EOF
@@ -30,7 +28,7 @@ EOF
 }
 
 parse_options() {
-    while getopts "hm:i:d" option; do
+    while getopts "hm:I:i:d" option; do
         case $option in
             h)
                 show_usage
@@ -39,8 +37,11 @@ parse_options() {
             m)
                 MAC=$OPTARG
                 ;;
-            i)
+            I)
                 IFACE=$OPTARG
+                ;;
+            i)
+                RAND_IP=$OPTARG
                 ;;
             d)
                 DEBUG="-D"
@@ -78,8 +79,9 @@ EOF
     chmod +x ${plum_script}
 }
 
-trap exit_error INT TERM EXIT
+trap exit_error INT TERM
 plum_path=$(which plum)
+[ -z "$plum_path" ] && echo "Plum is not installed." && exit 1 
 plum_script=$(mktemp)
 tftpd_dir="/tmp/tftp"
 [ -d "${tftpd_dir}" ] && rm -Rf ${tftpd_dir}
@@ -108,11 +110,18 @@ if [ "$(whoami)" != "root" ]; then
     exit 1
 fi
 
-MY_IP=$(/sbin/ifconfig ${IFACE} | grep 'inet ' | cut -d: -f2 | awk '{ print $1}')
-[ -z "${MY_IP}" ] && echo "Are you sure ${IFACE} is correct ?" && exit 1 
-MY_BCAST=$(/sbin/ifconfig ${IFACE} | grep 'Bcast:' | cut -d: -f4 | awk '{print $1}')
-MY_MAC=$(/sbin/ifconfig ${IFACE} | grep HWaddr | cut -d ' ' -f 11)
-RAND_IP=$(python -c 'import plum.plum_net; print plum.network.find_free_ip("'${IFACE}'", "'${MY_IP}'","'${MY_MAC}'", "'${MY_BCAST}'")')
+if [ "$(uname)" = "Darwin" ];then
+    MY_IP=$(/sbin/ifconfig ${IFACE} | grep 'inet ' | cut -d' ' -f2)
+    MY_BCAST=$(/sbin/ifconfig ${IFACE} | grep 'broadcast ' | awk -F' ' '{print $NF}')
+    MY_MAC=$(/sbin/ifconfig ${IFACE} | grep 'ether ' | cut -d' ' -f2)
+    [ -z "${RAND_IP}" ] && echo "You need to specify an IP to assign to the device." && exit 1
+else
+    MY_IP=$(/sbin/ifconfig ${IFACE} | grep 'inet ' | cut -d: -f2 | awk '{ print $1}')
+    MY_BCAST=$(/sbin/ifconfig ${IFACE} | grep 'Bcast:' | cut -d: -f4 | awk '{print $1}')
+    MY_MAC=$(/sbin/ifconfig ${IFACE} | grep HWaddr | awk -F' ' '{print $NF}')
+    RAND_IP=$(python -c 'import plum.plum_net; print plum.network.find_free_ip("'${IFACE}'", "'${MY_IP}'","'${MY_MAC}'", "'${MY_BCAST}'")')
+fi
+[ -z "${MY_IP}" ] && echo "Are you sure ${IFACE} is correct ?" && exit 1
 
 file_format=$(echo ${file##*.})
 case $file_format in
