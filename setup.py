@@ -44,7 +44,7 @@ root = os.path.dirname(__file__)
 if root != '':
     os.chdir(root)
 
-os.system("g++ opentftp/opentftpd.cpp -oopentftp/opentftpd -lpthread")
+os.system("g++ opentftp/opentftpd.cpp -o opentftp/opentftpd -lpthread")
 
 setup(
     name='plum',
