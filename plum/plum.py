@@ -367,7 +367,8 @@ class Plum(object):
                 sys.stdout.flush()
                 # WAIT FOR THE DEVICE TO BOOT
                 logging.info("Waiting for your product to reboot...")
-                sleep(60 * 7)  # Wait 7mn, it should let the device to boot to find info.
+                sleep(60 * 7)  # Wait 7mn, it should give the device time to boot.
+                # This is done to avoid spamming the network with packet while we are sure it is not necessary.
                 ip = ipcomm_info(self.receive_port, self.mac_target, self.ip_target)
                 if ip is None:
                     logging.info("Timeout : Unable to get your product IP.")
