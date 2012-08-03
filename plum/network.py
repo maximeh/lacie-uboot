@@ -312,8 +312,9 @@ def ipcomm_info(receive_port, mac_target, ip_target):
                 continue
             data = tlvs(serv_data[8:])  # strip info header
             if data["MAC"].lower() == mac_target.lower():
-                if data["ADDR"].lower() == ip_target.lower():
+                if data["ADDR"].lower() != ip_target.lower():
                     continue
                 ip = data["ADDR"]
+                break
         tryout += 1
     return ip
