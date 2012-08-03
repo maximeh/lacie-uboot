@@ -55,9 +55,9 @@ setup(
     zip_safe=True,
     install_requires=[''],
     scripts=['bin/plum', 'bin/capsup'],
-    data_files=[('/usr/share/man/man1', ['doc/plum.1']),
-                ('/usr/bin/', ['opentftp/opentftpd']),
-                ('/etc/', ['opentftp/opentftp.ini'])],
+    data_files=[('share/man/man1', ['doc/plum.1']),
+                ('bin/', ['opentftp/opentftpd']),
+                ('etc/', ['opentftp/opentftp.ini'])],
     author='Maxime Hadjinlian',
     author_email='maxime.hadjinlian@gmail.com',
 
