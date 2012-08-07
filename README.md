@@ -1,7 +1,7 @@
 plum - Python LaCie das U-Boot Milchkuh
 =======================================
 
-plum let you connect to the U-Boot netconsole of any 
+plum let you connect to the U-Boot netconsole of any
 newgen LaCie product. It include a mini TFTP server.
 It is written in Python and designed to be easy to use.
 
@@ -36,7 +36,7 @@ For help on how to use plum, type:
 
     $ plum --help
 
-If you have a fancy network system, you may specify the interface you want plum 
+If you have a fancy network system, you may specify the interface you want plum
 to use by setting the option -i followed by the network interface name.
 
 plum will try to look for a free IP on your subnet, if you want to enforce the IP to set for your product, you should use the --ip option.
@@ -90,7 +90,11 @@ Then you can call your script like that (see previous section for other example 
 You must also put an empty line at the end of your script
 otherwise, the last line won't be executed.
 
-If your script does not output anything, I recomend you to use the 
+If your script does not output anything, I recomend you to use the
 -p option to print a pretty progress bar.
 
+Note
+----
+
+plum comes with opentfptd, it's a TFTP server written in C++ by Achal Dhir
 
