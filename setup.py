@@ -28,23 +28,25 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
-from setuptools import setup
+from distutils.core import setup
+from distutils.ccompiler import new_compiler
+from distutils.file_util import move_file
+
 
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
 # README file and 2) it's easier to type in the README file than to put a raw
-# string in below ...
-
-
+# string in below.
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-# Build opentftp
-root = os.path.dirname(__file__)
-if root != '':
-    os.chdir(root)
+#os.system("g++ opentftp/opentftpd.cpp -o opentftp/opentftpd -lpthread")
+tftpd = new_compiler()
+tftpd.set_libraries('pthread')
+tftpd.compile(['opentftp/opentftpd.cpp'], output_dir='build')
 
-os.system("g++ opentftp/opentftpd.cpp -o opentftp/opentftpd -lpthread")
+# Copy the binary compiled
+move_file('build/opentftp/opentftpd.o', 'build/opentftpd')
 
 setup(
     name='plum',
@@ -52,12 +54,10 @@ setup(
     packages=[
         'plum',
     ],
-    zip_safe=True,
-    install_requires=[''],
-    scripts=['bin/plum', 'bin/capsup'],
+    #ext_modules=[tftpd],
+    scripts=['bin/plum', 'bin/capsup', 'build/opentftpd'],
     data_files=[('share/man/man1', ['doc/plum.1']),
-                ('bin/', ['opentftp/opentftpd']),
-                ('etc/', ['opentftp/opentftp.ini'])],
+                ('/etc/', ['opentftp/opentftp.ini'])],
     author='Maxime Hadjinlian',
     author_email='maxime.hadjinlian@gmail.com',
 
@@ -72,19 +72,15 @@ setup(
 
     keywords='plum uboot lacie netconsole',
     classifiers=[
-        "Development Status :: 3 - Alpha",
         "Topic :: Utilities",
         "Environment :: Console",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: GNU General Public License (GPL)",
         "Natural Language :: English",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 2.6",
+        "Programming Language :: Python :: 2.7",
         "Topic :: Software Development :: Embedded Systems",
         "Topic :: System :: Shells",
         "Topic :: Terminals :: Terminal Emulators/X Terminals",
     ],
 )
-
-# Clean opentftp dir
-os.system("rm opentftp/opentftpd")
