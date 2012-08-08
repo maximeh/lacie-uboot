@@ -106,11 +106,11 @@ OPENTFTPD=$(which opentftpd)
 parse_options "${@}"
 shift $((OPTIND - 1))
 file=$1
-filename=$(basename $file)
 if [ -z "$file" ]; then
     show_usage
     exit 1
 fi
+filename=$(basename $file)
 
 if [ "$(whoami)" != "root" ]; then
     echo "You should be root to execute this script"
