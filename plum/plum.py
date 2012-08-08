@@ -121,7 +121,7 @@ class Plum(object):
 
         try:
             ip, mac, netmask, bcast = iface_info(net_dict['iface'])
-        except IOError:
+        except (IOError, TypeError):
             logging.error("Your network interface is not reachable."
                           " Is %s correct ?" % net_dict['iface'])
             return 1
