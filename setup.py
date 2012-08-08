@@ -32,7 +32,7 @@ from distutils.core import setup
 from distutils.ccompiler import new_compiler
 from distutils.file_util import move_file
 
-VERSION = 0.1
+VERSION = '0.1'
 
 
 # Utility function to read the README file.
