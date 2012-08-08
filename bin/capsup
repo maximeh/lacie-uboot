@@ -119,16 +119,17 @@ fi
 
 if [ "$(uname)" = "Darwin" ];then
     MY_IP=$(ifconfig $IFACE | grep 'inet ' | cut -d' ' -f2)
-    MY_BCAST=$(ifconfig $IFACE | grep 'broadcast ' | awk -F' ' '{print $NF}')
-    MY_MAC=$(ifconfig $IFACE | grep 'ether ' | cut -d' ' -f2)
     [ -z "$RAND_IP" ] && echo "You need to specify an IP to assign to the device." && exit 1
 else
     MY_IP=$(ifconfig $IFACE | grep 'inet ' | cut -d: -f2 | awk '{ print $1}')
-    MY_BCAST=$(ifconfig $IFACE | grep 'Bcast:' | cut -d: -f4 | awk '{print $1}')
-    MY_MAC=$(ifconfig $IFACE | grep HWaddr | awk -F' ' '{print $NF}')
-    RAND_IP=$(python -c 'import plum.plum_net; print plum.network.find_free_ip("'$IFACE'", "'$MY_IP'","'$MY_MAC'", "'$MY_BCAST'")')
 fi
 [ -z "$MY_IP" ] && echo "Are you sure $IFACE is correct ?" && exit 1
+
+if [ "$(uname)" != "Darwin" ];then
+    MY_NETMASK=$(ifconfig $IFACE | grep 'Mask:' | awk -F: '{print $NF}')
+    MY_MAC=$(ifconfig $IFACE | grep HWaddr | awk -F' ' '{print $NF}')
+    RAND_IP=$(python -c 'import plum.network; print plum.network.find_free_ip("'$IFACE'", "'$MY_IP'","'$MY_MAC'", "'$MY_NETMASK'")')
+fi
 
 file_format=$(echo ${file##*.})
 case $file_format in
