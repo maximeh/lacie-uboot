@@ -49,13 +49,9 @@ tftpd.link_executable(objects, os.path.join('build', "opentftpd"))
 setup(
     name='plum',
     version=VERSION,
-    packages=[
-        'plum',
-    ],
-    #ext_modules=[tftpd],
+    packages=['plum'],
     scripts=['bin/plum', 'bin/capsup', 'build/opentftpd'],
-    data_files=[('share/man/man1', ['doc/plum.1']),
-                ('etc/', ['opentftp/opentftp.ini'])],
+    data_files=[('etc/', ['opentftp/opentftp.ini'])],
     author='Maxime Hadjinlian',
     author_email='maxime.hadjinlian@gmail.com',
 
