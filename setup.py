@@ -30,7 +30,6 @@
 import os
 from distutils.core import setup
 from distutils.ccompiler import new_compiler
-from distutils.file_util import move_file
 
 VERSION = '0.1'
 
@@ -43,11 +42,9 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 tftpd = new_compiler()
-tftpd.set_libraries('pthread')
-tftpd.compile(['opentftp/opentftpd.cpp'], output_dir='build')
-
-# Copy the binary compiled
-move_file('build/opentftp/opentftpd.o', 'build/opentftpd')
+tftpd.set_libraries(['pthread', 'stdc++'])
+objects = tftpd.compile(['opentftp/opentftpd.cpp'], output_dir='build')
+tftpd.link_executable(objects, os.path.join('build', "opentftpd"))
 
 setup(
     name='plum',
