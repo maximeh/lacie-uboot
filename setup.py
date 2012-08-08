@@ -32,6 +32,8 @@ from distutils.core import setup
 from distutils.ccompiler import new_compiler
 from distutils.file_util import move_file
 
+VERSION = 0.1
+
 
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
@@ -40,7 +42,6 @@ from distutils.file_util import move_file
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-#os.system("g++ opentftp/opentftpd.cpp -o opentftp/opentftpd -lpthread")
 tftpd = new_compiler()
 tftpd.set_libraries('pthread')
 tftpd.compile(['opentftp/opentftpd.cpp'], output_dir='build')
@@ -50,14 +51,14 @@ move_file('build/opentftp/opentftpd.o', 'build/opentftpd')
 
 setup(
     name='plum',
-    version='0.1',
+    version=VERSION,
     packages=[
         'plum',
     ],
     #ext_modules=[tftpd],
     scripts=['bin/plum', 'bin/capsup', 'build/opentftpd'],
     data_files=[('share/man/man1', ['doc/plum.1']),
-                ('/etc/', ['opentftp/opentftp.ini'])],
+                ('etc/', ['opentftp/opentftp.ini'])],
     author='Maxime Hadjinlian',
     author_email='maxime.hadjinlian@gmail.com',
 
