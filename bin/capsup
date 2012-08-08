@@ -3,10 +3,10 @@
 exit_error() {
     for pid in $(ps aux | grep -v grep |grep opentftp | awk '{print $2}');
     do
-        sudo kill ${pid};
+        kill $pid
     done
-    [ -f ${plum_script} ] && rm ${plum_script}
-    [ -d ${tftpd_dir} ] && rm -Rf ${tftpd_dir}
+    [ -f $plum_script ] && rm $plum_script
+    [ -d $tftpd_dir ] && rm -Rf $tftpd_dir
     exit
 }
 
@@ -57,9 +57,9 @@ prepare_plum() {
 
     if [ $type == "bin" ] || [ $type == "kwb" ] ;then
     cat > $plum_script <<- EOF
-#!${plum_path}
-setenv serverip ${MY_IP}
-setenv ipaddr ${RAND_IP}
+#!$plum_path
+setenv serverip $MY_IP
+setenv ipaddr $RAND_IP
 bubt $filename
 y
 reset
@@ -67,29 +67,36 @@ reset
 EOF
     else
     cat > $plum_script <<- EOF
-#!${plum_path}
-setenv serverip ${MY_IP}
-setenv ipaddr ${RAND_IP}
+#!$plum_path
+setenv serverip $MY_IP
+setenv ipaddr $RAND_IP
 tftp 0x800000 uImage
-set bootargs console=ttyS0,115200 tftp_server='${MY_IP}' static_addr='${RAND_IP}'
+set bootargs console=ttyS0,115200 tftp_server='$MY_IP' static_addr='$RAND_IP'
 bootm
 
 EOF
     fi
-    chmod +x ${plum_script}
+    chmod +x $plum_script
 }
 
 trap exit_error INT TERM
 plum_path=$(which plum)
-[ -z "$plum_path" ] && echo "Plum is not installed." && exit 1 
+[ -z "$plum_path" ] && echo "Plum is not installed." && exit 1
 plum_script=$(mktemp)
 tftpd_dir="/tmp/tftp"
-[ -d "${tftpd_dir}" ] && rm -Rf ${tftpd_dir}
-mkdir -p ${tftpd_dir}
+[ -d "$tftpd_dir" ] && rm -Rf $tftpd_dir
+mkdir -p $tftpd_dir
 
 if ! which opentftpd &> /dev/null; then
     echo "Error: opentftpd not found"
     echo "You need to re-install plum."
+    exit 0
+fi
+
+OPENTFTPD_CONF="/usr/local/etc/opentftp.ini"
+if [ ! -f "$OPENTFTPD_CONF" ]; then
+    echo "Error: opentftp.ini not found in /usr/local/etc/"
+    echo "You need to create one."
     exit 0
 fi
 
@@ -111,17 +118,17 @@ if [ "$(whoami)" != "root" ]; then
 fi
 
 if [ "$(uname)" = "Darwin" ];then
-    MY_IP=$(/sbin/ifconfig ${IFACE} | grep 'inet ' | cut -d' ' -f2)
-    MY_BCAST=$(/sbin/ifconfig ${IFACE} | grep 'broadcast ' | awk -F' ' '{print $NF}')
-    MY_MAC=$(/sbin/ifconfig ${IFACE} | grep 'ether ' | cut -d' ' -f2)
-    [ -z "${RAND_IP}" ] && echo "You need to specify an IP to assign to the device." && exit 1
+    MY_IP=$(ifconfig $IFACE | grep 'inet ' | cut -d' ' -f2)
+    MY_BCAST=$(ifconfig $IFACE | grep 'broadcast ' | awk -F' ' '{print $NF}')
+    MY_MAC=$(ifconfig $IFACE | grep 'ether ' | cut -d' ' -f2)
+    [ -z "$RAND_IP" ] && echo "You need to specify an IP to assign to the device." && exit 1
 else
-    MY_IP=$(/sbin/ifconfig ${IFACE} | grep 'inet ' | cut -d: -f2 | awk '{ print $1}')
-    MY_BCAST=$(/sbin/ifconfig ${IFACE} | grep 'Bcast:' | cut -d: -f4 | awk '{print $1}')
-    MY_MAC=$(/sbin/ifconfig ${IFACE} | grep HWaddr | awk -F' ' '{print $NF}')
-    RAND_IP=$(python -c 'import plum.plum_net; print plum.network.find_free_ip("'${IFACE}'", "'${MY_IP}'","'${MY_MAC}'", "'${MY_BCAST}'")')
+    MY_IP=$(ifconfig $IFACE | grep 'inet ' | cut -d: -f2 | awk '{ print $1}')
+    MY_BCAST=$(ifconfig $IFACE | grep 'Bcast:' | cut -d: -f4 | awk '{print $1}')
+    MY_MAC=$(ifconfig $IFACE | grep HWaddr | awk -F' ' '{print $NF}')
+    RAND_IP=$(python -c 'import plum.plum_net; print plum.network.find_free_ip("'$IFACE'", "'$MY_IP'","'$MY_MAC'", "'$MY_BCAST'")')
 fi
-[ -z "${MY_IP}" ] && echo "Are you sure ${IFACE} is correct ?" && exit 1
+[ -z "$MY_IP" ] && echo "Are you sure $IFACE is correct ?" && exit 1
 
 file_format=$(echo ${file##*.})
 case $file_format in
@@ -138,16 +145,16 @@ case $file_format in
         echo "File extension not available. Only .capsule, .bin or .kwb"
         ;;
 esac
-prepare_plum ${file_format} ${plum_script}
+prepare_plum $file_format $plum_script
 
 # Start TFTP server
-${OPENTFTPD} -i /etc/opentftp.ini &
+$OPENTFTPD -i $OPENTFTPD_CONF &
 SERV_PID=$!
 
 # Exec plum script
-${plum_script} -m ${MAC} -i ${IFACE} --ip ${RAND_IP} -w ${DEBUG}
+$plum_script -m $MAC -i $IFACE --ip $RAND_IP -w $DEBUG
 
-kill $SERV_PID > /dev/null 2>&1
-[ -f ${plum_script} ] && rm ${plum_script}
-[ -d ${tftpd_dir} ] && rm -Rf ${tftpd_dir}
+kill $SERV_PID &> /dev/null
+[ -f $plum_script ] && rm $plum_script
+[ -d $tftpd_dir ] && rm -Rf $tftpd_dir
 
