@@ -288,6 +288,10 @@ class Plum(object):
         sock.sendto(command, (self.ip_target, self.uboot_port))
         prompt = False
         len_command = 0
+        # Don't try to wait for a prompt with bootm
+        if cmd == 'bootm':
+            sock.close()
+            return 42
 
         while prompt is False:
             srecv = select([sock], [], [], 0.5)
