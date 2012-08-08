@@ -131,7 +131,7 @@ class Plum(object):
             if sys.platform == "darwin":
                 logging.error("You need to specify an IP to assign to the device.")
                 return 1
-            net_dict['ip_target'] = find_free_ip(net_dict['iface'], ip, netmask)
+            net_dict['ip_target'] = find_free_ip(net_dict['iface'], ip, mac, netmask)
 
         # Check MAC and IP value.
         if not is_valid_mac(net_dict['mac_target']):
