@@ -28,11 +28,11 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import distutils
 from distutils.core import setup
 from distutils.ccompiler import new_compiler
 
 VERSION = '0.1'
-
 
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
@@ -41,10 +41,13 @@ VERSION = '0.1'
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+distutils.log.set_verbosity(1)
 tftpd = new_compiler()
 tftpd.set_libraries(['pthread', 'stdc++'])
+tftpd.compiler_so.append("-O2")
+tftpd.define_macro("_FORTIFY_SOURCE", "2")
 objects = tftpd.compile(['opentftp/opentftpd.cpp'], output_dir='build')
-tftpd.link_executable(objects, os.path.join('build', "opentftpd"))
+tftpd.link_executable(objects, os.path.join('build', "opentftpd"), extra_postargs=["-zrelro"])
 
 setup(
     name='plum',
