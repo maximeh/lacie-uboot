@@ -1,21 +1,24 @@
 #!/bin/bash
 
-if [ "$1" == "clean" ]; then
-    echo -e "cleaning"
-    root=$(dirname $(readlink -f $0))
-    pushd ${root} > /dev/null 2>&1
-    rm -Rf deb_dist plum.egg-info
-    popd > /dev/null 2>&1
-    echo -e "\033[32mdone"
-    exit
-fi
+# In a temp folder, create a folder called plum-0.1
+# make a tar plum_0.1.orig.tar.gz
+# execute debuild a first time
 
-#Need python-stdeb 
-python setup.py --command-packages=stdeb.command sdist_dsc
+VERSION=0.1
+actual_dir=$(pwd)
+work_dir=$(mktemp -d)
 
-pushd deb_dist/plum-* > /dev/null 2>&1
-cp ../../debian/control debian/
-dpkg-buildpackage -rfakeroot -uc -us
-popd > /dev/null 2>&1
-plum_path=$(ls deb_dist/python-plum*.deb)
-echo -e "\033[32mDebian package available at $(pwd)/${plum_path}"
+pushd $work_dir &> /dev/null
+cp -R $actual_dir/ ./plum-${VERSION}
+tar czf plum_${VERSION}.orig.tar.gz plum-${VERSION}
+pushd $work_dir/plum-${VERSION} &>/dev/null
+debuild -uc -us --source-option=--include-binaries --source-option=-isession
+popd &> /dev/null
+plum_path=$(ls python-plum*.deb)
+mv $(pwd)/${plum_path} $actual_dir
+echo -e "\033[32mDebian package available at ${actual_dir}/${plum_path}"
+popd &> /dev/null
+
+# Cleaning time
+[ -d "$work_dir" ] && rm -Rf $work_dir
+
