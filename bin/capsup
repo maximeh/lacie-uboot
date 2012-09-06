@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Set the local to english to avoid translation of ifconfig output
+LC_ALL=en_US
+
 exit_error() {
     for pid in $(ps aux | grep -v grep |grep opentftp | awk '{print $2}');
     do
