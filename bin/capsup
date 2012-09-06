@@ -128,7 +128,9 @@ fi
 if [ "$(uname)" != "Darwin" ];then
     MY_NETMASK=$(ifconfig $IFACE | grep 'Mask:' | awk -F: '{print $NF}')
     MY_MAC=$(ifconfig $IFACE | grep HWaddr | awk -F' ' '{print $NF}')
-    RAND_IP=$(python -c 'import plum.network; print plum.network.find_free_ip("'$IFACE'", "'$MY_IP'","'$MY_MAC'", "'$MY_NETMASK'")')
+    if [ -z "$RAND_IP" ]; then
+        RAND_IP=$(python -c 'import plum.network; print plum.network.find_free_ip("'$IFACE'", "'$MY_IP'","'$MY_MAC'", "'$MY_NETMASK'")')
+    fi
 fi
 
 file_format=$(echo ${file##*.})
