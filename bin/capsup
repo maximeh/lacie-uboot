@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Set the local to english to avoid translation of ifconfig output
-LC_ALL=en_US
+# Set the local to avoid translation of ifconfig output
+export LC_ALL=C
 
 exit_error() {
     for pid in $(ps aux | grep -v grep |grep opentftp | awk '{print $2}');
@@ -130,7 +130,7 @@ fi
 
 if [ "$(uname)" != "Darwin" ];then
     MY_NETMASK=$(ifconfig $IFACE | grep 'Mask:' | awk -F: '{print $NF}')
-    MY_MAC=$(ifconfig $IFACE | grep HWaddr | awk -F' ' '{print $NF}')
+    MY_MAC=$(ifconfig $IFACE | grep 'HWaddr' | awk -F' ' '{print $NF}')
     if [ -z "$RAND_IP" ]; then
         RAND_IP=$(python -c 'import plum.network; print plum.network.find_free_ip("'$IFACE'", "'$MY_IP'","'$MY_MAC'", "'$MY_NETMASK'")')
     fi
