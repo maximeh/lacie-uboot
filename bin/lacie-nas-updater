@@ -8,7 +8,7 @@ exit_error() {
     do
         kill $pid
     done
-    [ -f $plum_script ] && rm $plum_script
+    [ -f $lacie_uboot_script ] && rm $lacie_uboot_script
     [ -d $tftpd_dir ] && rm -Rf $tftpd_dir
     exit
 }
@@ -53,14 +53,14 @@ parse_options() {
     done
 }
 
-prepare_plum() {
-    # Prepare plum script
+prepare_lacie_uboot() {
+    # Prepare lacie_uboot script
     local type=$1
-    local plum_script=$2
+    local lacie_uboot_script=$2
 
     if [ $type == "bin" ] || [ $type == "kwb" ] ;then
-    cat > $plum_script <<- EOF
-#!$plum_path
+    cat > $lacie_uboot_script <<- EOF
+#!$lacie_uboot_path
 setenv serverip $MY_IP
 setenv ipaddr $RAND_IP
 bubt $filename
@@ -69,8 +69,8 @@ reset
 
 EOF
     else
-    cat > $plum_script <<- EOF
-#!$plum_path
+    cat > $lacie_uboot_script <<- EOF
+#!$lacie_uboot_path
 setenv serverip $MY_IP
 setenv ipaddr $RAND_IP
 tftp 0x800000 uImage
@@ -79,20 +79,20 @@ bootm
 
 EOF
     fi
-    chmod +x $plum_script
+    chmod +x $lacie_uboot_script
 }
 
 trap exit_error INT TERM
-plum_path=$(which plum)
-[ -z "$plum_path" ] && echo "Plum is not installed." && exit 1
-plum_script=$(mktemp)
+lacie_uboot_path=$(which lacie-uboot-shell)
+[ -z "$lacie_uboot_path" ] && echo "lacie-uboot-shell is not installed." && exit 1
+lacie_uboot_script=$(mktemp)
 tftpd_dir="/tmp/tftp"
 [ -d "$tftpd_dir" ] && rm -Rf $tftpd_dir
 mkdir -p $tftpd_dir
 
 if ! which opentftpd &> /dev/null; then
     echo "Error: opentftpd not found"
-    echo "You need to re-install plum."
+    echo "You need to re-install lacie_uboot."
     exit 0
 fi
 
@@ -132,7 +132,7 @@ if [ "$(uname)" != "Darwin" ];then
     MY_NETMASK=$(ifconfig $IFACE | grep 'Mask:' | awk -F: '{print $NF}')
     MY_MAC=$(ifconfig $IFACE | grep 'HWaddr' | awk -F' ' '{print $NF}')
     if [ -z "$RAND_IP" ]; then
-        RAND_IP=$(python -c 'import plum.network; print plum.network.find_free_ip("'$IFACE'", "'$MY_IP'","'$MY_MAC'", "'$MY_NETMASK'")')
+        RAND_IP=$(python -c 'import lacie-uboot.network; print lacie-uboot.network.find_free_ip("'$IFACE'", "'$MY_IP'","'$MY_MAC'", "'$MY_NETMASK'")')
     fi
 fi
 
@@ -151,16 +151,16 @@ case $file_format in
         echo "File extension not available. Only .capsule, .bin or .kwb"
         ;;
 esac
-prepare_plum $file_format $plum_script
+prepare_lacie_uboot $file_format $lacie_uboot_script
 
 # Start TFTP server
 $OPENTFTPD -i $OPENTFTPD_CONF &
 SERV_PID=$!
 
-# Exec plum script
-$plum_script -m $MAC -i $IFACE --ip $RAND_IP -w $DEBUG
+# Exec lacie_uboot script
+$lacie_uboot_script -m $MAC -i $IFACE --ip $RAND_IP -w $DEBUG
 
 kill $SERV_PID &> /dev/null
-[ -f $plum_script ] && rm $plum_script
+[ -f $lacie_uboot_script ] && rm $lacie_uboot_script
 [ -d $tftpd_dir ] && rm -Rf $tftpd_dir
 

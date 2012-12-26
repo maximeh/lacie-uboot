@@ -50,10 +50,10 @@ objects = tftpd.compile(['opentftp/opentftpd.cpp'], output_dir='build')
 tftpd.link_executable(objects, os.path.join('build', "opentftpd"), extra_postargs=["-zrelro"])
 
 setup(
-    name='plum',
+    name='lacie-uboot',
     version=VERSION,
-    packages=['plum'],
-    scripts=['bin/plum', 'bin/capsup', 'build/opentftpd'],
+    packages=['lacie-uboot'],
+    scripts=['bin/lacie-uboot-shell', 'bin/lacie-nas-updater', 'build/opentftpd'],
     data_files=[('etc/', ['opentftp/opentftp.ini'])],
     author='Maxime Hadjinlian',
     author_email='maxime.hadjinlian@gmail.com',
@@ -67,7 +67,7 @@ setup(
 
     license='GPL',
 
-    keywords='plum uboot lacie netconsole',
+    keywords='lacie-uboot uboot lacie netconsole',
     classifiers=[
         "Topic :: Utilities",
         "Environment :: Console",

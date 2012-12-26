@@ -1,5 +1,13 @@
-#!/usr/bin/env python
+'''
+This is the lacie-uboot module. It contains lacie-uboot which allow you to
+connect to the net console of every LaCie product.
 
+It also provide a client/server class to send a LUMP,
+(LaCie U-Boot Magic Packet).
+
+You can easily use this module into your programm to catch a netconsole and
+send some predefined command.
+'''
 # Author:     Maxime Hadjinlian
 #             maxime.hadjinlian@gmail.com
 # All rights reserved.
@@ -25,22 +33,3 @@
 # THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-import os
-import sys
-
-from plum.plum import main
-
-if sys.platform != "win32":
-    if os.geteuid() != 0:
-        print "You must be administrator/root to run this program."
-        sys.exit(1)
-
-try:
-    sys.exit(main())
-except (KeyboardInterrupt, EOFError, SystemExit, KeyError):
-    pass
-except TypeError:
-    sys.stderr.write('What are you doing ? Read the manual please.\n')
-    sys.stderr.flush()
-    sys.exit(0)

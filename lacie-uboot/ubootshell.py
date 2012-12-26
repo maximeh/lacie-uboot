@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-plum allow you to discuss with the netconsol of u-boot.
+ubooshell allow you to discuss with the netconsol of u-boot.
 '''
 
 # Author:     Maxime Hadjinlian
@@ -48,9 +48,9 @@ sys.dont_write_bytecode = True
 from network import iface_info, find_free_ip, is_valid_mac, is_valid_ipv4, ipcomm_info
 
 
-class Plum(object):
+class Ubootshell(object):
     '''
-    An instance of Plum is a session with the netconsole shell.
+    An instance of UBootshell is a session with the netconsole shell.
      '''
 
     def __init__(self):
@@ -392,7 +392,7 @@ def main():
     import argparse
     from argparse import RawTextHelpFormatter
 
-    parser = argparse.ArgumentParser(prog='plum', formatter_class=RawTextHelpFormatter)
+    parser = argparse.ArgumentParser(formatter_class=RawTextHelpFormatter)
     parser.add_argument('script', metavar='file', type=str, nargs='?',
                        help=argparse.SUPPRESS)
     parser.add_argument("-m", "--mac", dest="mac", action="store",
@@ -420,7 +420,7 @@ def main():
     parser.add_argument("-D", "--debug", dest="loglevel", action="store_const",
                       const=logging.DEBUG, help="Output debugging information")
 
-    session = Plum()
+    session = Ubootshell()
 
     if '-D' in sys.argv or '--debug' in sys.argv:
         session.debug = True

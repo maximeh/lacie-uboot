@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# In a temp folder, create a folder called plum-0.1
-# make a tar plum_0.1.orig.tar.gz
+# In a temp folder, create a folder called lacie-uboot-0.1
+# make a tar lacie-uboot_0.1.orig.tar.gz
 # execute debuild a first time
 
 VERSION=0.1
@@ -9,14 +9,14 @@ actual_dir=$(pwd)
 work_dir=$(mktemp -d)
 
 pushd $work_dir &> /dev/null
-cp -R $actual_dir/ ./plum-${VERSION}
-tar czf plum_${VERSION}.orig.tar.gz plum-${VERSION}
-pushd $work_dir/plum-${VERSION} &>/dev/null
+cp -R $actual_dir/ ./lacie-uboot-${VERSION}
+tar czf lacie-uboot_${VERSION}.orig.tar.gz lacie-uboot-${VERSION}
+pushd $work_dir/lacie-uboot-${VERSION} &>/dev/null
 debuild -uc -us --source-option=--include-binaries --source-option=-isession
 popd &> /dev/null
-plum_path=$(ls python-plum*.deb)
-mv $(pwd)/${plum_path} $actual_dir
-echo -e "\033[32mDebian package available at ${actual_dir}/${plum_path}"
+lacie_uboot_path=$(ls python-lacie-uboot*.deb)
+mv $(pwd)/${lacie_uboot_path} $actual_dir
+echo -e "\033[32mDebian package available at ${actual_dir}/${lacie_uboot_path}"
 popd &> /dev/null
 
 # Cleaning time
