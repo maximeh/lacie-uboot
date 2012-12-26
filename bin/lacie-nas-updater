@@ -4,12 +4,11 @@
 export LC_ALL=C
 
 exit_error() {
-    for pid in $(ps aux | grep -v grep |grep opentftp | awk '{print $2}');
-    do
-        kill $pid
-    done
     [ -f $lacie_uboot_script ] && rm $lacie_uboot_script
-    [ -d $tftpd_dir ] && rm -Rf $tftpd_dir
+    for file in $installed_file; do
+        [ -f $file ] && rm -f $file
+        [ -d $file ] && rm -Rf $file
+    done
     exit
 }
 
@@ -20,22 +19,26 @@ Update a LaCie NAS system with the given file.
 If your file ends with .capsule, we will update the system.
 If your file ends with .bin or .kwb, we will update U-Boot.
 
-  -h        show this message
-  -m        MAC address of the product to flash
-  -I        IFACE, specify your network inteface if not default (eth0)
-  -i        To specify the IP address to assign to the device.
-  -d        show debug message
+    -h        show this message
+    -t        Path to the root of your TFTP server
+    -m        MAC address of the product to flash
+    -I        IFACE, specify your network inteface if not default (eth0)
+    -i        To specify the IP address to assign to the device.
+    -d        show debug message
 
 EOF
     exit 1
 }
 
 parse_options() {
-    while getopts "hm:I:i:d" option; do
+    while getopts "ht:m:I:i:d" option; do
         case $option in
             h)
                 show_usage
                 exit 0
+                ;;
+            t)
+                TFTP_ROOT=$OPTARG
                 ;;
             m)
                 MAC=$OPTARG
@@ -86,26 +89,16 @@ trap exit_error INT TERM
 lacie_uboot_path=$(which lacie-uboot-shell)
 [ -z "$lacie_uboot_path" ] && echo "lacie-uboot-shell is not installed." && exit 1
 lacie_uboot_script=$(mktemp)
-tftpd_dir="/tmp/tftp"
-[ -d "$tftpd_dir" ] && rm -Rf $tftpd_dir
-mkdir -p $tftpd_dir
 
-if ! which opentftpd &> /dev/null; then
-    echo "Error: opentftpd not found"
-    echo "You need to re-install lacie_uboot."
-    exit 0
-fi
-
-OPENTFTPD_CONF="/usr/local/etc/opentftp.ini"
-if [ ! -f "$OPENTFTPD_CONF" ]; then
-    echo "Error: opentftp.ini not found in /usr/local/etc/"
-    echo "You need to create one."
+if ! which realpath &> /dev/null; then
+    echo "Error: realpath not found in your path"
+    echo "Please, apt-get install realpath"
     exit 0
 fi
 
 IFACE="eth0"
 DEBUG="-p"
-OPENTFTPD=$(which opentftpd)
+TFTP_ROOT="$(pwd)"
 parse_options "${@}"
 shift $((OPTIND - 1))
 file=$1
@@ -114,6 +107,12 @@ if [ -z "$file" ]; then
     exit 1
 fi
 filename=$(basename $file)
+TFTP_ROOT=$(realpath $TFTP_ROOT)
+if [ ! -d "$TFTP_ROOT" ]; then
+    echo "$TFTP_ROOT does not exists."
+    show_usage
+    exit 1
+fi
 
 if [ "$(whoami)" != "root" ]; then
     echo "You should be root to execute this script"
@@ -137,30 +136,41 @@ if [ "$(uname)" != "Darwin" ];then
 fi
 
 file_format=$(echo ${file##*.})
+installed_file=""
 case $file_format in
     "capsule")
         # Decapsule the given file into temporary directory
-        sed '1,/<\/Capsule>/d' $file | tar xf - -C $tftpd_dir || return 1
+        temp_file=$(mktemp)
+        sed '1,/<\/Capsule>/d' $file > $temp_file
+        for file in $(tar tf $temp_file); do
+            [ $file == "./" ] && continue
+            installed_file="$installed_file "$file
+        done
+        tar xf $temp_file -C $TFTP_ROOT
+        if [ $? -ne 0 ]; then
+            exit 1
+        fi
+        rm $temp_file
         ;;
     "bin" | "kwb")
         # Move U-Boot into ptftpd directory
-        cp $file $tftpd_dir
+        cp $file $TFTP_ROOT
+        installed_file="$file"
         ;;
     *)
         show_usage
         echo "File extension not available. Only .capsule, .bin or .kwb"
         ;;
 esac
-prepare_lacie_uboot $file_format $lacie_uboot_script
 
-# Start TFTP server
-$OPENTFTPD -i $OPENTFTPD_CONF &
-SERV_PID=$!
+prepare_lacie_uboot $file_format $lacie_uboot_script
 
 # Exec lacie_uboot script
 $lacie_uboot_script -m $MAC -i $IFACE --ip $RAND_IP -w $DEBUG
 
-kill $SERV_PID &> /dev/null
 [ -f $lacie_uboot_script ] && rm $lacie_uboot_script
-[ -d $tftpd_dir ] && rm -Rf $tftpd_dir
+for file in $installed_file; do
+    [ -f $file ] && rm -f $file
+    [ -d $file ] && rm -Rf $file
+done
 
