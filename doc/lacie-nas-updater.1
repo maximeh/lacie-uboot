@@ -1,0 +1,48 @@
+.TH LACIE-NAS-UPDATER 1 "2012 Dec 26"
+.SH NAME
+lacie-nas-updater \- Update LaCie NAS U-Boot or firmware with no hardware
+.SH SYNOPSIS
+.br
+.B lacie-nas-updater
+[options]
+.SH DESCRIPTION
+.B lacie-nas-updater
+A simple way to update U-Boot or the firmware of a LaCie NAS using only
+a network cable.
+By default, it uses the port 6666, 4445 and 4446.
+.PP
+.SH OPTIONS
+The options may be given in any order.
+.br
+.TP 15
+\-h, \-\-help
+Display
+.B lacie-uboot-shell
+help, options and usage.
+.TP
+.RB \-I " IFACE"
+Give
+.B lacie-nas-updater
+the IFACE you want to use to communicate with the device.
+.TP
+.RB \-m " MAC"
+Give
+.B lacie-nas-updater
+the MAC address of the target. It must be in the 00:00:00:00:00:00 format where
+each hexadecimal number is > 0 and < F.
+.TP
+.RB \-i " FORCE_IP"
+Specify the IP address to assign to the device.
+.RB \-t " TFTP_ROOT_PATH"
+The root path of your TFTP server.
+.B lacie-nas-updater
+will place the file there.
+.TP
+.RB \-d
+Output debug informations.
+.SH SEE ALSO
+nc(1)
+.SH AUTHORS
+.B lacie-nas-updater
+is written and maintained by Maxime Hadjinlian <maxime.hadjinlian@gmail.com>,
+with help from a few others. See the AUTHORS file for more information.

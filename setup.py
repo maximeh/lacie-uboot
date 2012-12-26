@@ -31,22 +31,17 @@ import os
 import distutils
 from distutils.core import setup
 
-VERSION = '0.1'
-
-# Utility function to read the README file.
-# Used for the long_description.  It's nice, because now 1) we have a top level
-# README file and 2) it's easier to type in the README file than to put a raw
-# string in below.
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
-
-distutils.log.set_verbosity(1)
+VERSION = '1.0'
 
 setup(
     name='lacie-uboot',
     version=VERSION,
     packages=['lacie-uboot'],
     scripts=['bin/lacie-uboot-shell', 'bin/lacie-nas-updater'],
+    data_files=[
+                  ('share/man/man1', ['doc/lacie-uboot-shell.1']),
+                  ('share/man/man1', ['doc/lacie-nas-updater.1']),
+                 ],
     author='Maxime Hadjinlian',
     author_email='maxime.hadjinlian@gmail.com',
 
@@ -54,7 +49,14 @@ setup(
     maintainer_email='maxime.hadjinlian@gmail.com',
 
     description='Access a LaCie NAS\'s U-Boot netconsole without any hardware',
-    long_description=read('README.md'),
+    long_description='''
+ LaCie Network-Attached Storage products offer a U-Boot netconsole,
+ which can be accessed using the tools provided in this package:
+  * lacie-uboot-shell - a simple interactive client which can connect
+    to the U-Boot netconsole using only a network cable;
+  * lacie-nas-updater - a script to update the device's bootloader or
+    firmware using lacie-uboot-shell (requires a TFTP server).
+''',
     url='http://f00.fr',
 
     license='GPL',
