@@ -1,5 +1,5 @@
-plum (0.1-1) unstable; urgency=low
+lacie-uboot (1.0-1) UNRELEASED; urgency=low
 
-  * source package automatically created by stdeb 0.6.0+git
+  * Initial release. (Closes: #XXXXXX)
 
- -- Maxime Hadjinlian <maxime.hadjinlian@gmail.com>  Tue, 14 Feb 2012 14:56:50 +0100
+ -- Maxime Hadjinlian <maxime.hadjinlian@gmail.com>  Wed, 26 Dec 2012 18:45:25 +0100

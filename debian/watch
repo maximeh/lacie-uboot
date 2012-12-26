@@ -1,1 +1,2 @@
-https://github.com/maximeh/plum/tags .*/tarball/(\d[\d\.]+)
+version=3
+https://github.com/maximeh/lacie-uboot/tags .*/tarball/(\d[\d\.]+)

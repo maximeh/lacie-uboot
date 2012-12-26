@@ -1,16 +1,21 @@
-Source: plum
+Source: lacie-uboot
 Maintainer: Maxime Hadjinlian <maxime.hadjinlian@gmail.com>
 Section: python
 Priority: optional
-Build-Depends: python-setuptools (>= 0.6b3), debhelper (>= 9.2)
+Build-Depends: python-setuptools (>= 0.6b3), debhelper (>= 9.2), python (>=2.6)
 XB-Python-Version: ${python:Versions}
 Standards-Version: 3.9.3
+Homepage: https://github.com/maximeh/lacie-uboot
+Vcs-Git: git://github.com/maximeh/lacie-uboot.git
 
-Package: python-plum
+Package: lacie-uboot
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
 Provides: ${python:Provides}
-Architecture: any
-Description: Python LaCie das U-Boot Milchkuh
- plum let you connect to the U-Boot netconsole of any
- newgen LaCie product. It include a mini UDP server.
- It is written in Python and designed to be easy to use.
+Architecture: all
+Description: LaCie U-Boot netconsole shell
+ LaCie Network-Attached Storage products offer a U-Boot netconsole,
+ which can be accessed using the tools provided in this package:
+  * lacie-uboot-shell - a simple interactive client which can connect
+    to the U-Boot netconsole using only a network cable;
+  * lacie-nas-updater - a script to update the device's bootloader or
+    firmware using lacie-uboot-shell (requires a TFTP server).
