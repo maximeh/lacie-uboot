@@ -1,2 +1,2 @@
 version=3
-https://github.com/maximeh/lacie-uboot/tags .*/tarball/(\d[\d\.]+)
+https://github.com/maximeh/lacie-uboot/tags .*/v(\d[\d\.]+)\.tar\.gz

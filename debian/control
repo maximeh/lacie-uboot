@@ -1,8 +1,8 @@
 Source: lacie-uboot
 Maintainer: Maxime Hadjinlian <maxime.hadjinlian@gmail.com>
-Section: python
-Priority: optional
-Build-Depends: python-setuptools (>= 0.6b3), debhelper (>= 9.2), python (>=2.6)
+Section: utils
+Priority: extra
+Build-Depends: python-setuptools (>= 0.6b3), debhelper (>= 9), python (>= 2.6)
 XB-Python-Version: ${python:Versions}
 Standards-Version: 3.9.3
 Homepage: https://github.com/maximeh/lacie-uboot
