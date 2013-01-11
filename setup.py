@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Author:     Maxime Hadjinlian
+# Author:     Maxime Hadjinlian (C) 2013
 #             maxime.hadjinlian@gmail.com
 # All rights reserved.
 #

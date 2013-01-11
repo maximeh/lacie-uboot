@@ -8,7 +8,7 @@ It also provide a client/server class to send a LUMP,
 You can easily use this module into your programm to catch a netconsole and
 send some predefined command.
 '''
-# Author:     Maxime Hadjinlian
+# Author:     Maxime Hadjinlian (C) 2013
 #             maxime.hadjinlian@gmail.com
 # All rights reserved.
 #

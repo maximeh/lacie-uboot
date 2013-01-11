@@ -5,7 +5,7 @@
 network is a small library with a few utils functions.
 '''
 
-# Author:     Maxime Hadjinlian
+# Author:     Maxime Hadjinlian (C) 2013
 #             maxime.hadjinlian@gmail.com
 # All rights reserved.
 #
