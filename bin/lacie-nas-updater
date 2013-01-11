@@ -88,7 +88,7 @@ prepare_lacie_uboot() {
     local type=$1
     local lacie_uboot_script=$2
 
-    if [ $type == "bin" ] || [ $type == "kwb" ] ;then
+    if [ $type == "bin" ] || [ $type == "kwb" ]; then
     cat > $lacie_uboot_script <<- EOF
 #!$lacie_uboot_path
 setenv serverip $MY_IP
@@ -146,7 +146,7 @@ if [ "$(whoami)" != "root" ]; then
     exit 1
 fi
 
-if [ "$(uname)" = "Darwin" ];then
+if [ "$(uname)" = "Darwin" ]; then
     MY_IP=$(ifconfig $IFACE | grep 'inet ' | cut -d' ' -f2)
     [ -z "$RAND_IP" ] && echo "You need to specify an IP to assign to the device." && exit 1
 else
@@ -154,7 +154,7 @@ else
 fi
 [ -z "$MY_IP" ] && echo "Are you sure $IFACE is correct ?" && exit 1
 
-if [ "$(uname)" != "Darwin" ];then
+if [ "$(uname)" != "Darwin" ]; then
     MY_NETMASK=$(ifconfig $IFACE | grep 'Mask:' | awk -F: '{print $NF}')
     MY_MAC=$(ifconfig $IFACE | grep 'HWaddr' | awk -F' ' '{print $NF}')
     if [ -z "$RAND_IP" ]; then
