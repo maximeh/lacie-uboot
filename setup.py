@@ -37,9 +37,9 @@ setup(
     name='lacie_uboot',
     version=VERSION,
     packages=['lacie_uboot'],
-    scripts=['bin/lacie_uboot-shell', 'bin/lacie-nas-updater'],
+    scripts=['bin/lacie-uboot-shell', 'bin/lacie-nas-updater'],
     data_files=[
-                  ('share/man/man1', ['doc/lacie_uboot-shell.1']),
+                  ('share/man/man1', ['doc/lacie-uboot-shell.1']),
                   ('share/man/man1', ['doc/lacie-nas-updater.1']),
                  ],
     author='Maxime Hadjinlian',
@@ -52,10 +52,10 @@ setup(
     long_description='''
  LaCie Network-Attached Storage products offer a U-Boot netconsole,
  which can be accessed using the tools provided in this package:
-  * lacie_uboot-shell - a simple interactive client which can connect
+  * lacie-uboot-shell - a simple interactive client which can connect
     to the U-Boot netconsole using only a network cable;
   * lacie-nas-updater - a script to update the device's bootloader or
-    firmware using lacie_uboot-shell (requires a TFTP server).
+    firmware using lacie-uboot-shell (requires a TFTP server).
 ''',
     url='http://f00.fr',
 

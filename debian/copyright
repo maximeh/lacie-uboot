@@ -7,11 +7,11 @@ License: BSD-3-clause-lacie-uboot
 
 Files: *
 Copyright: 2013, Maxime Hadjinlian <maxime.hadjinlian@gmail.com>
-License : BSD-3-clause-lacie-uboot
+License: BSD-3-clause-lacie-uboot
 
 Files: debian/*
 Copyright: 2013, Maxime Hadjinlian <maxime.hadjinlian@gmail.com>
-License : BSD-3-clause-lacie-uboot
+License: BSD-3-clause-lacie-uboot
 
 License: BSD-3-clause-lacie-uboot
  Redistribution and use in source and binary forms, with or without
