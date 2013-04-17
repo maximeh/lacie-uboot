@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-ubooshell allow you to discuss with the netconsol of u-boot.
+ubootshell allow you to discuss with the netconsol of u-boot.
 '''
 
 # Author:     Maxime Hadjinlian (C) 2013
