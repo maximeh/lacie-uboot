@@ -27,9 +27,6 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-# Set the local to avoid translation of ifconfig output
-export LC_ALL=C
-
 exit_error() {
     [ -f $lacie_uboot_script ] && rm $lacie_uboot_script
     for file in $installed_file; do
@@ -47,7 +44,7 @@ If your file ends with .capsule, we will update the system.
 If your file ends with .bin or .kwb, we will update U-Boot.
 
     -h        show this message
-    -t        Path to the root of your TFTP server
+    -t        Path to the root of your TFTP server (must be started !)
     -m        MAC address of the product to flash
     -I        IFACE, specify your network inteface if not default (eth0)
     -i        To specify the IP address to assign to the device.
@@ -91,7 +88,7 @@ prepare_lacie_uboot() {
     if [ $type == "bin" ] || [ $type == "kwb" ]; then
     cat > $lacie_uboot_script <<- EOF
 #!$lacie_uboot_path
-setenv serverip $MY_IP
+setenv serverip $IP
 setenv ipaddr $RAND_IP
 bubt $filename
 y
@@ -101,16 +98,21 @@ EOF
     else
     cat > $lacie_uboot_script <<- EOF
 #!$lacie_uboot_path
-setenv serverip $MY_IP
+setenv serverip $IP
 setenv ipaddr $RAND_IP
 tftp 0x800000 uImage
-set bootargs console=ttyS0,115200 tftp_server='$MY_IP' static_addr='$RAND_IP'
+set bootargs console=ttyS0,115200 tftp_server='$IP' static_addr='$RAND_IP'
 bootm
 
 EOF
     fi
     chmod +x $lacie_uboot_script
 }
+
+if [ "$(whoami)" != "root" ]; then
+    echo "You should be root to execute this script"
+    exit 1
+fi
 
 trap exit_error INT TERM
 lacie_uboot_path=$(which lacie-uboot-shell)
@@ -128,12 +130,16 @@ DEBUG="-p"
 TFTP_ROOT="$(pwd)"
 parse_options "${@}"
 shift $((OPTIND - 1))
-file=$1
-if [ -z "$file" ]; then
+
+file="$1"
+if [ -z "$file" -o ! -f "$file" ]; then
     show_usage
     exit 1
 fi
 filename=$(basename $file)
+file_format=$(echo ${file##*.})
+installed_file=""
+
 TFTP_ROOT=$(realpath $TFTP_ROOT)
 if [ ! -d "$TFTP_ROOT" ]; then
     echo "$TFTP_ROOT does not exists."
@@ -141,29 +147,17 @@ if [ ! -d "$TFTP_ROOT" ]; then
     exit 1
 fi
 
-if [ "$(whoami)" != "root" ]; then
-    echo "You should be root to execute this script"
+NETWORK_DATA=$(python -c 'import lacie_uboot.network; " ".join(print lacie_uboot.network.iface_info("'$IFACE'"))' 2> /dev/null)
+[ $? -ne 0 ] && echo "Are you sure $IFACE is correct ?" && exit 1
+read IP MAC NETMASK BCAST <<< $NETWORK_DATA
+
+if [ "$(uname)" = "Darwin" -a -z "$RAND_IP" ]; then
+    echo "You need to specify an IP to assign to the device."
     exit 1
+elif [ -z "$RAND_IP" ]; then
+    RAND_IP=$(python -c 'import lacie_uboot.network; print lacie_uboot.network.find_free_ip("'$IFACE'", "'$IP'","'$MAC'", "'$NETMASK'")')
 fi
 
-if [ "$(uname)" = "Darwin" ]; then
-    MY_IP=$(ifconfig $IFACE | grep 'inet ' | cut -d' ' -f2)
-    [ -z "$RAND_IP" ] && echo "You need to specify an IP to assign to the device." && exit 1
-else
-    MY_IP=$(ifconfig $IFACE | grep 'inet ' | cut -d: -f2 | awk '{ print $1}')
-fi
-[ -z "$MY_IP" ] && echo "Are you sure $IFACE is correct ?" && exit 1
-
-if [ "$(uname)" != "Darwin" ]; then
-    MY_NETMASK=$(ifconfig $IFACE | grep 'Mask:' | awk -F: '{print $NF}')
-    MY_MAC=$(ifconfig $IFACE | grep 'HWaddr' | awk -F' ' '{print $NF}')
-    if [ -z "$RAND_IP" ]; then
-        RAND_IP=$(python -c 'import lacie-uboot.network; print lacie-uboot.network.find_free_ip("'$IFACE'", "'$MY_IP'","'$MY_MAC'", "'$MY_NETMASK'")')
-    fi
-fi
-
-file_format=$(echo ${file##*.})
-installed_file=""
 case $file_format in
     "capsule")
         # Decapsule the given file into temporary directory
@@ -200,4 +194,6 @@ for file in $installed_file; do
     [ -f $file ] && rm -f $file
     [ -d $file ] && rm -Rf $file
 done
+
+exit 0
 
