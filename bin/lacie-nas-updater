@@ -147,7 +147,7 @@ if [ ! -d "$TFTP_ROOT" ]; then
     exit 1
 fi
 
-NETWORK_DATA=$(python -c 'import lacie_uboot.network; " ".join(print lacie_uboot.network.iface_info("'$IFACE'"))' 2> /dev/null)
+NETWORK_DATA=$(python -c 'import lacie_uboot.network; print " ".join(lacie_uboot.network.iface_info("'$IFACE'"));' 2> /dev/null)
 [ $? -ne 0 ] && echo "Are you sure $IFACE is correct ?" && exit 1
 read IP MAC NETMASK BCAST <<< $NETWORK_DATA
 
